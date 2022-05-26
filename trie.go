@@ -6,14 +6,22 @@ import (
 	"github.com/shivamMg/ppds/tree"
 )
 
-type EditOp int
+const RootKeyPart = "*"
+
+type EditOpType int
 
 const (
-	EditOpNone EditOp = iota
-	EditOpInsert
-	EditOpDelete
-	EditOpReplace
+	EditOpTypeNone EditOpType = iota
+	EditOpTypeInsert
+	EditOpTypeDelete
+	EditOpTypeReplace
 )
+
+type EditOp struct {
+	Type         EditOpType
+	KeyPart      string
+	ReplacedWith string
+}
 
 type Trie struct {
 	root *Node
@@ -21,8 +29,8 @@ type Trie struct {
 
 type Node struct {
 	keyPart    string
-	value      any
 	isTerminal bool
+	value      any
 	children   map[string]*Node
 }
 
@@ -31,9 +39,9 @@ type SearchResults struct {
 }
 
 type SearchResult struct {
-	Value   any
 	Key     []string
-	EditOps []EditOp
+	Value   any
+	EditOps []*EditOp
 }
 
 type SearchOptions struct {
@@ -65,22 +73,32 @@ func WithEditOps() func(*SearchOptions) {
 	}
 }
 
+func (n *Node) KeyPart() string {
+	return n.keyPart
+}
+
 func (n *Node) IsTerminal() bool {
 	return n.isTerminal
 }
 
+func (n *Node) Value() any {
+	return n.value
+}
+
+func (n *Node) ChildNodes() []*Node {
+	return n.childNodes()
+}
+
 func (n *Node) Data() interface{} {
-	return n.keyPart
+	data := n.keyPart
+	if n.isTerminal {
+		data += " ($)"
+	}
+	return data
 }
 
 func (n *Node) Children() []tree.Node {
-	children := make([]*Node, 0, len(n.children))
-	for _, child := range n.children {
-		children = append(children, child)
-	}
-	sort.Slice(children, func(i, j int) bool {
-		return children[i].keyPart < children[j].keyPart
-	})
+	children := n.childNodes()
 	result := make([]tree.Node, len(children))
 	for i, child := range children {
 		result[i] = tree.Node(child)
@@ -88,8 +106,19 @@ func (n *Node) Children() []tree.Node {
 	return result
 }
 
+func (n *Node) childNodes() []*Node {
+	children := make([]*Node, 0, len(n.children))
+	for _, child := range n.children {
+		children = append(children, child)
+	}
+	sort.Slice(children, func(i, j int) bool {
+		return children[i].keyPart < children[j].keyPart
+	})
+	return children
+}
+
 func New() *Trie {
-	return &Trie{root: &Node{keyPart: "*"}}
+	return &Trie{root: &Node{keyPart: RootKeyPart}}
 }
 
 func (t *Trie) Root() *Node {
@@ -213,8 +242,4 @@ func (t *Trie) populate(results *SearchResults, node *Node, prefixTokens []strin
 		t.populate(results, child, prefixTokens)
 		prefixTokens = prefixTokens[:len(prefixTokens)-1]
 	}
-}
-
-func main() {
-
 }
