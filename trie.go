@@ -6,7 +6,10 @@ import (
 	"github.com/shivamMg/ppds/tree"
 )
 
-const RootKeyPart = "*"
+const (
+	RootKeyPart    = "^"
+	TerminalSuffix = "($)"
+)
 
 type EditOpType int
 
@@ -92,7 +95,7 @@ func (n *Node) ChildNodes() []*Node {
 func (n *Node) Data() interface{} {
 	data := n.keyPart
 	if n.isTerminal {
-		data += " ($)"
+		data += " " + TerminalSuffix
 	}
 	return data
 }
@@ -104,6 +107,14 @@ func (n *Node) Children() []tree.Node {
 		result[i] = tree.Node(child)
 	}
 	return result
+}
+
+func (n *Node) Print() {
+	tree.PrintHrn(n)
+}
+
+func (n *Node) Sprint() string {
+	return tree.SprintHrn(n)
 }
 
 func (n *Node) childNodes() []*Node {
@@ -144,6 +155,10 @@ func (t *Trie) Put(key []string, value any) (existed bool) {
 		node = child
 	}
 	return existed
+}
+
+func (t *Trie) Delete(key []string) (value any, existed bool) {
+	return nil, false
 }
 
 // WithExactKey()
