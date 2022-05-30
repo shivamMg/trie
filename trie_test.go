@@ -161,11 +161,13 @@ func TestTrie_Search(t *testing.T) {
 	tri.Put([]string{"an", "umbrella"}, 6)
 
 	testCases := []struct {
+		name            string
 		inputKey        []string
 		inputOptions    []func(*trie.SearchOptions)
 		expectedResults *trie.SearchResults
 	}{
 		{
+			name:     "prefix-one-word",
 			inputKey: []string{"the"},
 			expectedResults: &trie.SearchResults{
 				Results: []*trie.SearchResult{
@@ -177,6 +179,7 @@ func TestTrie_Search(t *testing.T) {
 			},
 		},
 		{
+			name:     "prefix-multiple-words",
 			inputKey: []string{"the", "quick"},
 			expectedResults: &trie.SearchResults{
 				Results: []*trie.SearchResult{
@@ -186,6 +189,7 @@ func TestTrie_Search(t *testing.T) {
 			},
 		},
 		{
+			name:         "prefix-one-word-with-exact-key",
 			inputKey:     []string{"the"},
 			inputOptions: []func(*trie.SearchOptions){trie.WithExactKey()},
 			expectedResults: &trie.SearchResults{
@@ -195,6 +199,7 @@ func TestTrie_Search(t *testing.T) {
 			},
 		},
 		{
+			name:         "prefix-multiple-words-with-exact-key",
 			inputKey:     []string{"the", "quick", "swimmer"},
 			inputOptions: []func(*trie.SearchOptions){trie.WithExactKey()},
 			expectedResults: &trie.SearchResults{
@@ -204,6 +209,7 @@ func TestTrie_Search(t *testing.T) {
 			},
 		},
 		{
+			name:         "edit-distance-one-edit",
 			inputKey:     []string{"the", "tree"},
 			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(1)},
 			expectedResults: &trie.SearchResults{
@@ -214,6 +220,7 @@ func TestTrie_Search(t *testing.T) {
 			},
 		},
 		{
+			name:         "edit-distance-one-edit-with-edit-opts",
 			inputKey:     []string{"the", "tree"},
 			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(1), trie.WithEditOps()},
 			expectedResults: &trie.SearchResults{
@@ -231,6 +238,7 @@ func TestTrie_Search(t *testing.T) {
 			},
 		},
 		{
+			name:         "edit-distance-two-edits-with-edit-opts",
 			inputKey:     []string{"the", "tree"},
 			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(2), trie.WithEditOps()},
 			expectedResults: &trie.SearchResults{
@@ -247,12 +255,16 @@ func TestTrie_Search(t *testing.T) {
 					{Key: []string{"the", "quick", "swimmer"}, Value: 3, EditOps: []*trie.EditOp{
 						{Type: trie.EditOpTypeNone, KeyPart: "the"},
 						{Type: trie.EditOpTypeDelete, KeyPart: "quick"},
-						{Type: trie.EditOpTypeReplace, KeyPart: "swimmer", ReplacedWith: "tree"},
+						{Type: trie.EditOpTypeReplace, KeyPart: "swimmer", ReplaceWith: "tree"},
 					}},
 					{Key: []string{"an", "apple", "tree"}, Value: 5, EditOps: []*trie.EditOp{
-						{Type: trie.EditOpTypeReplace, KeyPart: "an", ReplacedWith: "the"},
-						{Type: trie.EditOpTypeDelete, KeyPart: "apple"},
+						{Type: trie.EditOpTypeDelete, KeyPart: "an"},
+						{Type: trie.EditOpTypeReplace, KeyPart: "apple", ReplaceWith: "the"},
 						{Type: trie.EditOpTypeNone, KeyPart: "tree"},
+					}},
+					{Key: []string{"an", "umbrella"}, Value: 6, EditOps: []*trie.EditOp{
+						{Type: trie.EditOpTypeReplace, KeyPart: "an", ReplaceWith: "the"},
+						{Type: trie.EditOpTypeReplace, KeyPart: "umbrella", ReplaceWith: "tree"},
 					}},
 				},
 			},
@@ -260,7 +272,7 @@ func TestTrie_Search(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		t.Run(strings.Join(tc.inputKey, "-"), func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			actual := tri.Search(tc.inputKey, tc.inputOptions...)
 			assert.Len(t, actual.Results, len(tc.expectedResults.Results))
 			// sort before comparing
@@ -280,7 +292,7 @@ func TestTrie_Search_InvalidUsage_NegativeDistance(t *testing.T) {
 func TestTrie_Search_InvalidUsage_EditOpsWithoutMaxEditDistance(t *testing.T) {
 	tri := trie.New()
 
-	assert.PanicsWithError(t, "invalid usage: WithEditOps() must be passed with WithMaxEditDistance()", func() {
+	assert.PanicsWithError(t, "invalid usage: WithEditOps() cannot be passed without WithMaxEditDistance()", func() {
 		tri.Search(nil, trie.WithEditOps())
 	})
 }

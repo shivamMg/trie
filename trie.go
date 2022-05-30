@@ -1,6 +1,8 @@
 package trie
 
 import (
+	"fmt"
+	"math"
 	"sort"
 
 	"github.com/shivamMg/ppds/tree"
@@ -21,9 +23,9 @@ const (
 )
 
 type EditOp struct {
-	Type         EditOpType
-	KeyPart      string
-	ReplacedWith string
+	Type        EditOpType
+	KeyPart     string
+	ReplaceWith string
 }
 
 type Trie struct {
@@ -171,90 +173,144 @@ func (t *Trie) Search(key []string, options ...func(*SearchOptions)) *SearchResu
 		f(opts)
 	}
 
-	if opts.maxEditDistance == 0 {
-		return t.prefixSearch(key)
+	if opts.editDistance {
+		return t.searchWithEditDistance(key, opts)
 	}
-	return t.levenshteinSearch(key, opts)
+	return t.search(key, opts)
 }
 
-func (t *Trie) levenshteinSearch(prefixTokens []string, opts *SearchOptions) *SearchResults {
-	curRow := make([]int, len(prefixTokens)+1)
-	for i := 0; i < len(prefixTokens)+1; i++ {
-		curRow[i] = i
+func (t *Trie) searchWithEditDistance(key []string, opts *SearchOptions) *SearchResults {
+	// https://en.wikipedia.org/wiki/Levenshtein_distance#Iterative_with_full_matrix
+	// http://stevehanov.ca/blog/?id=114
+	columns := len(key) + 1
+	newRow := make([]int, columns)
+	for i := 0; i < columns; i++ {
+		newRow[i] = i
 	}
+	rows := [][]int{newRow}
 	results := &SearchResults{}
-	for token, node := range t.root.children {
-		t.levenshteinBuild(node, []string{token}, curRow, prefixTokens, results, opts)
+	for keyPart, node := range t.root.children {
+		t.buildWithEditDistance(results, node, []string{keyPart}, rows, key, opts)
 	}
 	return results
 }
 
-func (t *Trie) levenshteinBuild(node *Node, prevTokens []string, prevRow []int, prefixTokens []string, results *SearchResults, opts *SearchOptions) {
-	columns := len(prefixTokens) + 1
-	curRow := make([]int, len(prefixTokens)+1)
-	curRow[0] = prevRow[0] + 1
-
+func (t *Trie) buildWithEditDistance(results *SearchResults, node *Node, keyColumn []string, rows [][]int, key []string, opts *SearchOptions) {
+	prevRow := rows[len(rows)-1]
+	columns := len(key) + 1
+	newRow := make([]int, columns)
+	newRow[0] = prevRow[0] + 1
 	for i := 1; i < columns; i++ {
-		replaceCost := 0
-		if prefixTokens[i-1] != prevTokens[len(prevTokens)-1] {
-			replaceCost = 1
+		replaceCost := 1
+		if key[i-1] == keyColumn[len(keyColumn)-1] {
+			replaceCost = 0
 		}
-		minCost := min(
-			curRow[i-1]+1,            // insertion
+		newRow[i] = min(
+			newRow[i-1]+1,            // insertion
 			prevRow[i]+1,             // deletion
-			prevRow[i-1]+replaceCost, // replace
+			prevRow[i-1]+replaceCost, // substitution
 		)
-		curRow[i] = minCost
-		if replaceCost == 0 && minCost == prevRow[i-1] {
-			// edited=true
-		}
 	}
+	rows = append(rows, newRow)
 
-	if curRow[columns-1] <= opts.maxEditDistance && node.isTerminal {
-		result := &SearchResult{Value: node.value}
+	if newRow[columns-1] <= opts.maxEditDistance && node.isTerminal {
+		result := &SearchResult{Key: keyColumn, Value: node.value}
+		if opts.editOps {
+			result.EditOps = t.getEditOps(rows, keyColumn, key)
+		}
 		results.Results = append(results.Results, result)
 	}
+
+	if min(newRow...) <= opts.maxEditDistance {
+		for keyPart, child := range node.children {
+			t.buildWithEditDistance(results, child, append(keyColumn, keyPart), rows, key, opts)
+		}
+	}
 }
 
-func min(a, b, c int) int {
-	if b < a {
-		a = b
+func (t *Trie) getEditOps(rows [][]int, keyColumn []string, key []string) []*EditOp {
+	// https://gist.github.com/jlherren/d97839b1276b9bd7faa930f74711a4b6
+	fmt.Println(keyColumn, key)
+	ops := make([]*EditOp, 0, len(key))
+	r, c := len(rows)-1, len(rows[0])-1
+	for r > 0 || c > 0 {
+		insertionCost, deletionCost, substitutionCost := math.MaxInt, math.MaxInt, math.MaxInt
+		if c > 0 {
+			insertionCost = rows[r][c-1]
+		}
+		if r > 0 {
+			deletionCost = rows[r-1][c]
+		}
+		if r > 0 && c > 0 {
+			substitutionCost = rows[r-1][c-1]
+		}
+		minCost := min(insertionCost, deletionCost, substitutionCost)
+		if minCost == substitutionCost {
+			if rows[r][c] > rows[r-1][c-1] {
+				ops = append(ops, &EditOp{Type: EditOpTypeReplace, KeyPart: keyColumn[r-1], ReplaceWith: key[c-1]})
+				fmt.Println("r", keyColumn[r-1], key[c-1])
+			} else {
+				ops = append(ops, &EditOp{Type: EditOpTypeNone, KeyPart: keyColumn[r-1]})
+				fmt.Println("_", keyColumn[r-1])
+			}
+			r -= 1
+			c -= 1
+		} else if minCost == deletionCost {
+			ops = append(ops, &EditOp{Type: EditOpTypeDelete, KeyPart: keyColumn[r-1]})
+			fmt.Println("d", keyColumn[r-1])
+			r -= 1
+		} else if minCost == insertionCost {
+			ops = append(ops, &EditOp{Type: EditOpTypeInsert, KeyPart: key[c-1]})
+			fmt.Println("i", key[c-1])
+			c -= 1
+		}
 	}
-	if c < a {
-		a = c
+	for i, j := 0, len(ops)-1; i < j; i, j = i+1, j-1 {
+		ops[i], ops[j] = ops[j], ops[i]
 	}
-	return a
+	return ops
 }
 
-func (t *Trie) prefixSearch(prefixTokens []string) *SearchResults {
+func (t *Trie) search(prefixKey []string, opts *SearchOptions) *SearchResults {
 	results := &SearchResults{}
 	node := t.root
-	for _, token := range prefixTokens {
+	for _, keyPart := range prefixKey {
 		if node.children == nil {
 			return results
 		}
-		child, ok := node.children[token]
+		child, ok := node.children[keyPart]
 		if !ok {
 			return results
 		}
 		node = child
 	}
-	t.populate(results, node, prefixTokens)
+	if opts.exactKey {
+		if node.isTerminal {
+			result := &SearchResult{Key: prefixKey, Value: node.value}
+			results.Results = append(results.Results, result)
+		}
+		return results
+	}
+	t.build(results, node, prefixKey)
 	return results
 }
 
-func (t *Trie) populate(results *SearchResults, node *Node, prefixTokens []string) {
+func (t *Trie) build(results *SearchResults, node *Node, prefixKey []string) {
 	if node.isTerminal {
-		// tokenResults := make([]*TokenResult, len(prefixTokens))
-		// for i, token := range prefixTokens {
-		// 	tokenResults[i].Token = token
-		// }
-		// result := &SearchResult{Value: node.value, TokenResults: tokenResults}
-		// results.Results = append(results.Results, result)
+		result := &SearchResult{Key: prefixKey, Value: node.value}
+		results.Results = append(results.Results, result)
 	}
-	for token, child := range node.children {
-		prefixTokens = append(prefixTokens, token)
-		t.populate(results, child, prefixTokens)
-		prefixTokens = prefixTokens[:len(prefixTokens)-1]
+	for keyPart, child := range node.children {
+		t.build(results, child, append(prefixKey, keyPart))
 	}
+}
+
+func min(s ...int) int {
+	m := s[0]
+	for _, a := range s[1:] {
+		if a < m {
+			m = a
+		}
+	}
+	return m
 }
