@@ -284,7 +284,7 @@ func TestTrie_Search(t *testing.T) {
 }
 
 func TestTrie_Search_InvalidUsage_NegativeDistance(t *testing.T) {
-	assert.PanicsWithError(t, "invalid usage: maxDistance must be > 0", func() {
+	assert.PanicsWithError(t, "invalid usage: maxDistance must be greater than zero", func() {
 		trie.WithMaxEditDistance(-1)
 	})
 }
@@ -292,7 +292,7 @@ func TestTrie_Search_InvalidUsage_NegativeDistance(t *testing.T) {
 func TestTrie_Search_InvalidUsage_EditOpsWithoutMaxEditDistance(t *testing.T) {
 	tri := trie.New()
 
-	assert.PanicsWithError(t, "invalid usage: WithEditOps() cannot be passed without WithMaxEditDistance()", func() {
+	assert.PanicsWithError(t, "invalid usage: WithEditOps() must not be passed without WithMaxEditDistance()", func() {
 		tri.Search(nil, trie.WithEditOps())
 	})
 }
@@ -300,7 +300,7 @@ func TestTrie_Search_InvalidUsage_EditOpsWithoutMaxEditDistance(t *testing.T) {
 func TestTrie_Search_InvalidUsage_ExactKeyWithMaxEditDistance(t *testing.T) {
 	tri := trie.New()
 
-	assert.PanicsWithError(t, "invalid usage: WithExactKey() cannot be passed with WithMaxEditDistance()", func() {
+	assert.PanicsWithError(t, "invalid usage: WithExactKey() must not be passed with WithMaxEditDistance()", func() {
 		tri.Search(nil, trie.WithExactKey(), trie.WithMaxEditDistance(1))
 	})
 }

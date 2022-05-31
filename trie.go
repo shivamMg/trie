@@ -1,7 +1,7 @@
 package trie
 
 import (
-	"fmt"
+	"errors"
 	"math"
 	"sort"
 
@@ -35,7 +35,7 @@ type Trie struct {
 type Node struct {
 	keyPart    string
 	isTerminal bool
-	value      any
+	value      interface{}
 	children   map[string]*Node
 }
 
@@ -45,7 +45,7 @@ type SearchResults struct {
 
 type SearchResult struct {
 	Key     []string
-	Value   any
+	Value   interface{}
 	EditOps []*EditOp
 }
 
@@ -63,8 +63,8 @@ func WithExactKey() func(*SearchOptions) {
 }
 
 func WithMaxEditDistance(maxDistance int) func(*SearchOptions) {
-	if maxDistance < 0 {
-		panic("maxDistance cannot be negative")
+	if maxDistance <= 0 {
+		panic(errors.New("invalid usage: maxDistance must be greater than zero"))
 	}
 	return func(so *SearchOptions) {
 		so.editDistance = true
@@ -86,7 +86,7 @@ func (n *Node) IsTerminal() bool {
 	return n.isTerminal
 }
 
-func (n *Node) Value() any {
+func (n *Node) Value() interface{} {
 	return n.value
 }
 
@@ -138,7 +138,7 @@ func (t *Trie) Root() *Node {
 	return t.root
 }
 
-func (t *Trie) Put(key []string, value any) (existed bool) {
+func (t *Trie) Put(key []string, value interface{}) (existed bool) {
 	node := t.root
 	for i, part := range key {
 		if node.children == nil {
@@ -159,18 +159,44 @@ func (t *Trie) Put(key []string, value any) (existed bool) {
 	return existed
 }
 
-func (t *Trie) Delete(key []string) (value any, existed bool) {
-	return nil, false
+func (t *Trie) Delete(key []string) (value interface{}, existed bool) {
+	node := t.root
+	parent := make(map[*Node]*Node)
+	for _, keyPart := range key {
+		if node.children == nil {
+			return nil, false
+		}
+		child, ok := node.children[keyPart]
+		if !ok {
+			return nil, false
+		}
+		parent[child] = node
+		node = child
+	}
+	if !node.isTerminal {
+		return nil, false
+	}
+	node.isTerminal = false
+	value = node.value
+	node.value = nil
+	for node != nil && !node.isTerminal && len(node.children) == 0 {
+		delete(parent[node].children, node.keyPart)
+		node = parent[node]
+	}
+	return value, true
 }
 
-// WithExactKey()
-// WithMaxEditDistance(maxDistance int)
-// WithEditOps()
 // WithEqual(func(a, b string) bool)
 func (t *Trie) Search(key []string, options ...func(*SearchOptions)) *SearchResults {
 	opts := &SearchOptions{}
 	for _, f := range options {
 		f(opts)
+	}
+	if opts.editOps && !opts.editDistance {
+		panic(errors.New("invalid usage: WithEditOps() must not be passed without WithMaxEditDistance()"))
+	}
+	if opts.exactKey && opts.editDistance {
+		panic(errors.New("invalid usage: WithExactKey() must not be passed with WithMaxEditDistance()"))
 	}
 
 	if opts.editDistance {
@@ -230,7 +256,6 @@ func (t *Trie) buildWithEditDistance(results *SearchResults, node *Node, keyColu
 
 func (t *Trie) getEditOps(rows [][]int, keyColumn []string, key []string) []*EditOp {
 	// https://gist.github.com/jlherren/d97839b1276b9bd7faa930f74711a4b6
-	fmt.Println(keyColumn, key)
 	ops := make([]*EditOp, 0, len(key))
 	r, c := len(rows)-1, len(rows[0])-1
 	for r > 0 || c > 0 {
@@ -248,20 +273,16 @@ func (t *Trie) getEditOps(rows [][]int, keyColumn []string, key []string) []*Edi
 		if minCost == substitutionCost {
 			if rows[r][c] > rows[r-1][c-1] {
 				ops = append(ops, &EditOp{Type: EditOpTypeReplace, KeyPart: keyColumn[r-1], ReplaceWith: key[c-1]})
-				fmt.Println("r", keyColumn[r-1], key[c-1])
 			} else {
 				ops = append(ops, &EditOp{Type: EditOpTypeNone, KeyPart: keyColumn[r-1]})
-				fmt.Println("_", keyColumn[r-1])
 			}
 			r -= 1
 			c -= 1
 		} else if minCost == deletionCost {
 			ops = append(ops, &EditOp{Type: EditOpTypeDelete, KeyPart: keyColumn[r-1]})
-			fmt.Println("d", keyColumn[r-1])
 			r -= 1
 		} else if minCost == insertionCost {
 			ops = append(ops, &EditOp{Type: EditOpTypeInsert, KeyPart: key[c-1]})
-			fmt.Println("i", key[c-1])
 			c -= 1
 		}
 	}
