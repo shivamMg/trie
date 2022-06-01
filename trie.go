@@ -3,7 +3,6 @@ package trie
 import (
 	"errors"
 	"math"
-	"sort"
 
 	"github.com/shivamMg/ppds/tree"
 )
@@ -33,10 +32,12 @@ type Trie struct {
 }
 
 type Node struct {
-	keyPart    string
-	isTerminal bool
-	value      interface{}
-	children   map[string]*Node
+	keyPart     string
+	isTerminal  bool
+	value       interface{}
+	dllNode     *dllNode
+	children    map[string]*Node
+	childrenDLL *doublyLinkedList
 }
 
 type SearchResults struct {
@@ -75,6 +76,14 @@ func WithMaxEditDistance(maxDistance int) func(*SearchOptions) {
 func WithEditOps() func(*SearchOptions) {
 	return func(so *SearchOptions) {
 		so.editOps = true
+	}
+}
+
+func newNode(keyPart string) *Node {
+	return &Node{
+		keyPart:     keyPart,
+		children:    make(map[string]*Node),
+		childrenDLL: &doublyLinkedList{},
 	}
 }
 
@@ -121,17 +130,16 @@ func (n *Node) Sprint() string {
 
 func (n *Node) childNodes() []*Node {
 	children := make([]*Node, 0, len(n.children))
-	for _, child := range n.children {
-		children = append(children, child)
+	dllNode := n.childrenDLL.head
+	for dllNode != nil {
+		children = append(children, dllNode.trieNode)
+		dllNode = dllNode.next
 	}
-	sort.Slice(children, func(i, j int) bool {
-		return children[i].keyPart < children[j].keyPart
-	})
 	return children
 }
 
 func New() *Trie {
-	return &Trie{root: &Node{keyPart: RootKeyPart}}
+	return &Trie{root: newNode(RootKeyPart)}
 }
 
 func (t *Trie) Root() *Node {
@@ -141,13 +149,12 @@ func (t *Trie) Root() *Node {
 func (t *Trie) Put(key []string, value interface{}) (existed bool) {
 	node := t.root
 	for i, part := range key {
-		if node.children == nil {
-			node.children = make(map[string]*Node)
-		}
 		child, ok := node.children[part]
 		if !ok {
-			child = &Node{keyPart: part}
+			child = newNode(part)
+			child.dllNode = newDLLNode(child)
 			node.children[part] = child
+			node.childrenDLL.append(child.dllNode)
 		}
 		if i == len(key)-1 {
 			existed = child.isTerminal
@@ -163,9 +170,6 @@ func (t *Trie) Delete(key []string) (value interface{}, existed bool) {
 	node := t.root
 	parent := make(map[*Node]*Node)
 	for _, keyPart := range key {
-		if node.children == nil {
-			return nil, false
-		}
 		child, ok := node.children[keyPart]
 		if !ok {
 			return nil, false
@@ -181,6 +185,7 @@ func (t *Trie) Delete(key []string) (value interface{}, existed bool) {
 	node.value = nil
 	for node != nil && !node.isTerminal && len(node.children) == 0 {
 		delete(parent[node].children, node.keyPart)
+		parent[node].childrenDLL.pop(node.dllNode)
 		node = parent[node]
 	}
 	return value, true
@@ -215,8 +220,11 @@ func (t *Trie) searchWithEditDistance(key []string, opts *SearchOptions) *Search
 	}
 	rows := [][]int{newRow}
 	results := &SearchResults{}
-	for keyPart, node := range t.root.children {
-		t.buildWithEditDistance(results, node, []string{keyPart}, rows, key, opts)
+	dllNode := t.root.childrenDLL.head
+	for dllNode != nil {
+		node := dllNode.trieNode
+		t.buildWithEditDistance(results, node, []string{node.keyPart}, rows, key, opts)
+		dllNode = dllNode.next
 	}
 	return results
 }
@@ -248,8 +256,11 @@ func (t *Trie) buildWithEditDistance(results *SearchResults, node *Node, keyColu
 	}
 
 	if min(newRow...) <= opts.maxEditDistance {
-		for keyPart, child := range node.children {
-			t.buildWithEditDistance(results, child, append(keyColumn, keyPart), rows, key, opts)
+		dllNode := node.childrenDLL.head
+		for dllNode != nil {
+			child := dllNode.trieNode
+			t.buildWithEditDistance(results, child, append(keyColumn, child.keyPart), rows, key, opts)
+			dllNode = dllNode.next
 		}
 	}
 }
@@ -296,9 +307,6 @@ func (t *Trie) search(prefixKey []string, opts *SearchOptions) *SearchResults {
 	results := &SearchResults{}
 	node := t.root
 	for _, keyPart := range prefixKey {
-		if node.children == nil {
-			return results
-		}
 		child, ok := node.children[keyPart]
 		if !ok {
 			return results
@@ -321,8 +329,11 @@ func (t *Trie) build(results *SearchResults, node *Node, prefixKey []string) {
 		result := &SearchResult{Key: prefixKey, Value: node.value}
 		results.Results = append(results.Results, result)
 	}
-	for keyPart, child := range node.children {
-		t.build(results, child, append(prefixKey, keyPart))
+	dllNode := node.childrenDLL.head
+	for dllNode != nil {
+		child := dllNode.trieNode
+		t.build(results, child, append(prefixKey, child.keyPart))
+		dllNode = dllNode.next
 	}
 }
 
