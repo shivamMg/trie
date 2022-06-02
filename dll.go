@@ -1,5 +1,6 @@
 package trie
 
+// TODO: tests
 type doublyLinkedList struct {
 	head, tail *dllNode
 }

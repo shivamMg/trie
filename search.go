@@ -25,9 +25,10 @@ type SearchResults struct {
 }
 
 type SearchResult struct {
-	Key     []string
-	Value   interface{}
-	EditOps []*EditOp
+	Key       []string
+	Value     interface{}
+	EditCount int
+	EditOps   []*EditOp
 }
 
 type SearchOptions struct {
@@ -122,7 +123,7 @@ func (t *Trie) buildWithEditDistance(results *SearchResults, node *Node, keyColu
 	rows = append(rows, newRow)
 
 	if newRow[columns-1] <= opts.maxEditDistance && node.isTerminal {
-		result := &SearchResult{Key: keyColumn, Value: node.value}
+		result := &SearchResult{Key: keyColumn, Value: node.value, EditCount: newRow[columns-1]}
 		if opts.editOps {
 			result.EditOps = t.getEditOps(rows, keyColumn, key)
 		}

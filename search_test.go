@@ -70,8 +70,8 @@ func TestTrie_Search(t *testing.T) {
 			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(1)},
 			expectedResults: &trie.SearchResults{
 				Results: []*trie.SearchResult{
-					{Key: []string{"the"}, Value: 1},
-					{Key: []string{"the", "green", "tree"}, Value: 4},
+					{Key: []string{"the"}, Value: 1, EditCount: 1},
+					{Key: []string{"the", "green", "tree"}, Value: 4, EditCount: 1},
 				},
 			},
 		},
@@ -81,11 +81,11 @@ func TestTrie_Search(t *testing.T) {
 			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(1), trie.WithEditOps()},
 			expectedResults: &trie.SearchResults{
 				Results: []*trie.SearchResult{
-					{Key: []string{"the"}, Value: 1, EditOps: []*trie.EditOp{
+					{Key: []string{"the"}, Value: 1, EditCount: 1, EditOps: []*trie.EditOp{
 						{Type: trie.EditOpTypeNone, KeyPart: "the"},
 						{Type: trie.EditOpTypeInsert, KeyPart: "tree"},
 					}},
-					{Key: []string{"the", "green", "tree"}, Value: 4, EditOps: []*trie.EditOp{
+					{Key: []string{"the", "green", "tree"}, Value: 4, EditCount: 1, EditOps: []*trie.EditOp{
 						{Type: trie.EditOpTypeNone, KeyPart: "the"},
 						{Type: trie.EditOpTypeDelete, KeyPart: "green"},
 						{Type: trie.EditOpTypeNone, KeyPart: "tree"},
@@ -99,26 +99,26 @@ func TestTrie_Search(t *testing.T) {
 			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(2), trie.WithEditOps()},
 			expectedResults: &trie.SearchResults{
 				Results: []*trie.SearchResult{
-					{Key: []string{"the"}, Value: 1, EditOps: []*trie.EditOp{
+					{Key: []string{"the"}, Value: 1, EditCount: 1, EditOps: []*trie.EditOp{
 						{Type: trie.EditOpTypeNone, KeyPart: "the"},
 						{Type: trie.EditOpTypeInsert, KeyPart: "tree"},
 					}},
-					{Key: []string{"the", "quick", "swimmer"}, Value: 3, EditOps: []*trie.EditOp{
+					{Key: []string{"the", "quick", "swimmer"}, Value: 3, EditCount: 2, EditOps: []*trie.EditOp{
 						{Type: trie.EditOpTypeNone, KeyPart: "the"},
 						{Type: trie.EditOpTypeDelete, KeyPart: "quick"},
 						{Type: trie.EditOpTypeReplace, KeyPart: "swimmer", ReplaceWith: "tree"},
 					}},
-					{Key: []string{"the", "green", "tree"}, Value: 4, EditOps: []*trie.EditOp{
+					{Key: []string{"the", "green", "tree"}, Value: 4, EditCount: 1, EditOps: []*trie.EditOp{
 						{Type: trie.EditOpTypeNone, KeyPart: "the"},
 						{Type: trie.EditOpTypeDelete, KeyPart: "green"},
 						{Type: trie.EditOpTypeNone, KeyPart: "tree"},
 					}},
-					{Key: []string{"an", "apple", "tree"}, Value: 5, EditOps: []*trie.EditOp{
+					{Key: []string{"an", "apple", "tree"}, Value: 5, EditCount: 2, EditOps: []*trie.EditOp{
 						{Type: trie.EditOpTypeDelete, KeyPart: "an"},
 						{Type: trie.EditOpTypeReplace, KeyPart: "apple", ReplaceWith: "the"},
 						{Type: trie.EditOpTypeNone, KeyPart: "tree"},
 					}},
-					{Key: []string{"an", "umbrella"}, Value: 6, EditOps: []*trie.EditOp{
+					{Key: []string{"an", "umbrella"}, Value: 6, EditCount: 2, EditOps: []*trie.EditOp{
 						{Type: trie.EditOpTypeReplace, KeyPart: "an", ReplaceWith: "the"},
 						{Type: trie.EditOpTypeReplace, KeyPart: "umbrella", ReplaceWith: "tree"},
 					}},
