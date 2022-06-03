@@ -1,6 +1,7 @@
 package trie
 
 import (
+	"container/heap"
 	"errors"
 	"math"
 )
@@ -21,14 +22,17 @@ type EditOp struct {
 }
 
 type SearchResults struct {
-	Results []*SearchResult
+	Results         []*SearchResult
+	heap            *searchResultMaxHeap
+	tiebreakerCount int
 }
 
 type SearchResult struct {
-	Key       []string
-	Value     interface{}
-	EditCount int
-	EditOps   []*EditOp
+	Key        []string
+	Value      interface{}
+	EditCount  int
+	tiebreaker int
+	EditOps    []*EditOp
 }
 
 type SearchOptions struct {
@@ -37,6 +41,7 @@ type SearchOptions struct {
 	maxEditDistance int
 	editOps         bool
 	topKLeastEdited bool
+	topK            int
 }
 
 func WithExactKey() func(*SearchOptions) {
@@ -61,9 +66,13 @@ func WithEditOps() func(*SearchOptions) {
 	}
 }
 
-func WithTopKLeastEdited() func(*SearchOptions) {
+func WithTopKLeastEdited(k int) func(*SearchOptions) {
+	if k <= 0 {
+		panic(errors.New("invalid usage: k must be greater than zero"))
+	}
 	return func(so *SearchOptions) {
 		so.topKLeastEdited = true
+		so.topK = k
 	}
 }
 
@@ -74,6 +83,9 @@ func (t *Trie) Search(key []string, options ...func(*SearchOptions)) *SearchResu
 	}
 	if opts.editOps && !opts.editDistance {
 		panic(errors.New("invalid usage: WithEditOps() must not be passed without WithMaxEditDistance()"))
+	}
+	if opts.topKLeastEdited && !opts.editDistance {
+		panic(errors.New("invalid usage: WithTopKLeastEdited() must not be passed without WithMaxEditDistance()"))
 	}
 	if opts.exactKey && opts.editDistance {
 		panic(errors.New("invalid usage: WithExactKey() must not be passed with WithMaxEditDistance()"))
@@ -95,11 +107,25 @@ func (t *Trie) searchWithEditDistance(key []string, opts *SearchOptions) *Search
 	}
 	rows := [][]int{newRow}
 	results := &SearchResults{}
-	dllNode := t.root.childrenDLL.head
-	for dllNode != nil {
+	if opts.topKLeastEdited {
+		results.heap = &searchResultMaxHeap{}
+	}
+
+	for dllNode := t.root.childrenDLL.head; dllNode != nil; dllNode = dllNode.next {
 		node := dllNode.trieNode
 		t.buildWithEditDistance(results, node, []string{node.keyPart}, rows, key, opts)
-		dllNode = dllNode.next
+	}
+	if opts.topKLeastEdited {
+		n := results.heap.Len()
+		results.Results = make([]*SearchResult, n)
+		for n != 0 {
+			result := heap.Pop(results.heap).(*SearchResult)
+			result.tiebreaker = 0
+			results.Results[n-1] = result
+			n--
+		}
+		results.heap = nil
+		results.tiebreakerCount = 0
 	}
 	return results
 }
@@ -127,15 +153,24 @@ func (t *Trie) buildWithEditDistance(results *SearchResults, node *Node, keyColu
 		if opts.editOps {
 			result.EditOps = t.getEditOps(rows, keyColumn, key)
 		}
-		results.Results = append(results.Results, result)
+		if opts.topKLeastEdited {
+			results.tiebreakerCount++
+			result.tiebreaker = results.tiebreakerCount
+			if results.heap.Len() < opts.topK {
+				heap.Push(results.heap, result)
+			} else if (*results.heap)[0].EditCount > result.EditCount {
+				heap.Pop(results.heap)
+				heap.Push(results.heap, result)
+			}
+		} else {
+			results.Results = append(results.Results, result)
+		}
 	}
 
 	if min(newRow...) <= opts.maxEditDistance {
-		dllNode := node.childrenDLL.head
-		for dllNode != nil {
+		for dllNode := node.childrenDLL.head; dllNode != nil; dllNode = dllNode.next {
 			child := dllNode.trieNode
 			t.buildWithEditDistance(results, child, append(keyColumn, child.keyPart), rows, key, opts)
-			dllNode = dllNode.next
 		}
 	}
 }
@@ -204,11 +239,10 @@ func (t *Trie) build(results *SearchResults, node *Node, prefixKey []string) {
 		result := &SearchResult{Key: prefixKey, Value: node.value}
 		results.Results = append(results.Results, result)
 	}
-	dllNode := node.childrenDLL.head
-	for dllNode != nil {
+
+	for dllNode := node.childrenDLL.head; dllNode != nil; dllNode = dllNode.next {
 		child := dllNode.trieNode
 		t.build(results, child, append(prefixKey, child.keyPart))
-		dllNode = dllNode.next
 	}
 }
 

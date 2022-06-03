@@ -45,6 +45,11 @@ func TestTrie_Search(t *testing.T) {
 			},
 		},
 		{
+			name:            "prefix-non-existing",
+			inputKey:        []string{"non-existing"},
+			expectedResults: &trie.SearchResults{},
+		},
+		{
 			name:         "prefix-one-word-with-exact-key",
 			inputKey:     []string{"the"},
 			inputOptions: []func(*trie.SearchOptions){trie.WithExactKey()},
@@ -125,6 +130,55 @@ func TestTrie_Search(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:         "edit-distance-one-edit-with-topk",
+			inputKey:     []string{"the", "tree"},
+			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(1), trie.WithTopKLeastEdited(1)},
+			expectedResults: &trie.SearchResults{
+				Results: []*trie.SearchResult{
+					{Key: []string{"the"}, Value: 1, EditCount: 1},
+				},
+			},
+		},
+		{
+			name:         "edit-distance-two-edits-with-edit-opts-with-topk",
+			inputKey:     []string{"the", "tree"},
+			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(2), trie.WithEditOps(), trie.WithTopKLeastEdited(4)},
+			expectedResults: &trie.SearchResults{
+				Results: []*trie.SearchResult{
+					{Key: []string{"the"}, Value: 1, EditCount: 1, EditOps: []*trie.EditOp{
+						{Type: trie.EditOpTypeNone, KeyPart: "the"},
+						{Type: trie.EditOpTypeInsert, KeyPart: "tree"},
+					}},
+					{Key: []string{"the", "green", "tree"}, Value: 4, EditCount: 1, EditOps: []*trie.EditOp{
+						{Type: trie.EditOpTypeNone, KeyPart: "the"},
+						{Type: trie.EditOpTypeDelete, KeyPart: "green"},
+						{Type: trie.EditOpTypeNone, KeyPart: "tree"},
+					}},
+					{Key: []string{"the", "quick", "swimmer"}, Value: 3, EditCount: 2, EditOps: []*trie.EditOp{
+						{Type: trie.EditOpTypeNone, KeyPart: "the"},
+						{Type: trie.EditOpTypeDelete, KeyPart: "quick"},
+						{Type: trie.EditOpTypeReplace, KeyPart: "swimmer", ReplaceWith: "tree"},
+					}},
+					{Key: []string{"an", "apple", "tree"}, Value: 5, EditCount: 2, EditOps: []*trie.EditOp{
+						{Type: trie.EditOpTypeDelete, KeyPart: "an"},
+						{Type: trie.EditOpTypeReplace, KeyPart: "apple", ReplaceWith: "the"},
+						{Type: trie.EditOpTypeNone, KeyPart: "tree"},
+					}},
+				},
+			},
+		},
+		{
+			name:         "edit-distance-two-edits-with-two-topk",
+			inputKey:     []string{"the", "tree"},
+			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(2), trie.WithTopKLeastEdited(2)},
+			expectedResults: &trie.SearchResults{
+				Results: []*trie.SearchResult{
+					{Key: []string{"the"}, Value: 1, EditCount: 1},
+					{Key: []string{"the", "green", "tree"}, Value: 4, EditCount: 1},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -136,9 +190,21 @@ func TestTrie_Search(t *testing.T) {
 	}
 }
 
-func TestTrie_Search_InvalidUsage_NegativeDistance(t *testing.T) {
+func TestTrie_Search_InvalidUsage_EditDistance_LessThanZeroDistance(t *testing.T) {
+	assert.PanicsWithError(t, "invalid usage: maxDistance must be greater than zero", func() {
+		trie.WithMaxEditDistance(0)
+	})
 	assert.PanicsWithError(t, "invalid usage: maxDistance must be greater than zero", func() {
 		trie.WithMaxEditDistance(-1)
+	})
+}
+
+func TestTrie_Search_InvalidUsage_TopK_LessThanZeroK(t *testing.T) {
+	assert.PanicsWithError(t, "invalid usage: k must be greater than zero", func() {
+		trie.WithTopKLeastEdited(0)
+	})
+	assert.PanicsWithError(t, "invalid usage: k must be greater than zero", func() {
+		trie.WithTopKLeastEdited(-1)
 	})
 }
 
@@ -147,6 +213,14 @@ func TestTrie_Search_InvalidUsage_EditOpsWithoutMaxEditDistance(t *testing.T) {
 
 	assert.PanicsWithError(t, "invalid usage: WithEditOps() must not be passed without WithMaxEditDistance()", func() {
 		tri.Search(nil, trie.WithEditOps())
+	})
+}
+
+func TestTrie_Search_InvalidUsage_TopKWithoutMaxEditDistance(t *testing.T) {
+	tri := trie.New()
+
+	assert.PanicsWithError(t, "invalid usage: WithTopKLeastEdited() must not be passed without WithMaxEditDistance()", func() {
+		tri.Search(nil, trie.WithTopKLeastEdited(1))
 	})
 }
 

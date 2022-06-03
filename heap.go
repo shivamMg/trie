@@ -1,0 +1,30 @@
+package trie
+
+type searchResultMaxHeap []*SearchResult
+
+func (s searchResultMaxHeap) Len() int {
+	return len(s)
+}
+
+func (s searchResultMaxHeap) Less(i, j int) bool {
+	if s[i].EditCount == s[j].EditCount {
+		return s[i].tiebreaker > s[j].tiebreaker
+	}
+	return s[i].EditCount > s[j].EditCount
+}
+
+func (s searchResultMaxHeap) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+func (s *searchResultMaxHeap) Push(x interface{}) {
+	*s = append(*s, x.(*SearchResult))
+}
+
+func (s *searchResultMaxHeap) Pop() interface{} {
+	old := *s
+	n := len(old)
+	x := old[n-1]
+	*s = old[0 : n-1]
+	return x
+}
