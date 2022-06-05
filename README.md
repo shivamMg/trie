@@ -7,6 +7,7 @@ This library provides an implementation of the [Trie](https://en.wikipedia.org/w
 ```go
 func Example() {
 	tri := trie.New()
+	// Put keys and values
 	tri.Put([]string{"the"}, 1)
 	tri.Put([]string{"the", "quick", "brown", "fox"}, 2)
 	tri.Put([]string{"the", "quick", "sports", "car"}, 3)
@@ -39,9 +40,10 @@ func Example() {
 	// [the quick sports car] 3
 
 	key := []string{"the", "tree"}
-	results = tri.Search(key, trie.WithMaxEditDistance(2), trie.WithEditOps()) // Edit can be insert, delete, replace
+	results = tri.Search(key, trie.WithMaxEditDistance(2), // Edit can be insert, delete, replace
+		trie.WithEditOps())
 	for _, res := range results.Results {
-		fmt.Println(res.Key, res.Value, res.EditCount) // EditCount is number of edits needed to convert to [the tree]
+		fmt.Println(res.Key, res.Value, res.EditCount) // EditCount is number of edits
 	}
 	// Output (results not more than 2 edits away from [the tree]):
 	// [the] 1 1
@@ -49,7 +51,7 @@ func Example() {
 	// [an apple tree] 5 2
 	// [an umbrella] 6 2
 
-    result := results.Results[2]
+	result := results.Results[2]
 	fmt.Printf("To convert %v to %v:\n", result.Key, key)
 	printEditOps(result.EditOps)
 	// Output (edit operations needed to covert a result to [the tree]):

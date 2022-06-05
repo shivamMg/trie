@@ -23,6 +23,7 @@ func printEditOps(ops []*trie.EditOp) {
 
 func Example() {
 	tri := trie.New()
+	// Put keys and values
 	tri.Put([]string{"the"}, 1)
 	tri.Put([]string{"the", "quick", "brown", "fox"}, 2)
 	tri.Put([]string{"the", "quick", "sports", "car"}, 3)
@@ -55,7 +56,8 @@ func Example() {
 	// [the quick sports car] 3
 
 	key := []string{"the", "tree"}
-	results = tri.Search(key, trie.WithMaxEditDistance(2), trie.WithEditOps()) // Edit can be insert, delete, replace
+	results = tri.Search(key, trie.WithMaxEditDistance(2), // Edit can be insert, delete, replace
+		trie.WithEditOps())
 	for _, res := range results.Results {
 		fmt.Println(res.Key, res.Value, res.EditCount) // EditCount is number of edits
 	}
@@ -65,8 +67,9 @@ func Example() {
 	// [an apple tree] 5 2
 	// [an umbrella] 6 2
 
-	fmt.Printf("To convert %v to %v:\n", results.Results[2].Key, key)
-	printEditOps(results.Results[2].EditOps)
+	result := results.Results[2]
+	fmt.Printf("To convert %v to %v:\n", result.Key, key)
+	printEditOps(result.EditOps)
 	// Output (edit operations needed to covert a result to [the tree]):
 	// To convert [an apple tree] to [the tree]:
 	// - delete "an"
