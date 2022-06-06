@@ -149,7 +149,9 @@ func (t *Trie) buildWithEditDistance(results *SearchResults, node *Node, keyColu
 	rows = append(rows, newRow)
 
 	if newRow[columns-1] <= opts.maxEditDistance && node.isTerminal {
-		result := &SearchResult{Key: keyColumn, Value: node.value, EditCount: newRow[columns-1]}
+		resultKey := make([]string, len(keyColumn))
+		copy(resultKey, keyColumn)
+		result := &SearchResult{Key: resultKey, Value: node.value, EditCount: newRow[columns-1]}
 		if opts.editOps {
 			result.EditOps = t.getEditOps(rows, keyColumn, key)
 		}

@@ -1,0 +1,18 @@
+<html>
+    <head>
+        <title>trie demo</title>
+        <script src="wasm_exec.js"></script>
+    </head>
+    <body>
+    </body>
+    <script>
+        let wasm_instance
+        (async function loadAndRunGoWasm() {
+            const go = new Go()
+            const wasm_module = fetch("main.wasm")
+            wasm_instance = (await WebAssembly.instantiateStreaming(wasm_module, go.importObject)).instance
+            go.run(wasm_instance)
+            console.log("Go WASM initialized")
+        })(wasm_instance)
+    </script>
+</html>
