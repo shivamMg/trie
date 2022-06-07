@@ -5,8 +5,12 @@ import (
 	"net/http"
 )
 
-const siteDir = "./../site"
+const (
+	siteDir = "./../site"
+	addr    = ":8080"
+)
 
 func main() {
-	log.Fatal(http.ListenAndServe(":8080", http.FileServer(http.Dir(siteDir))))
+	log.Println("server will start at", addr)
+	log.Fatal(http.ListenAndServe(addr, http.FileServer(http.Dir(siteDir))))
 }

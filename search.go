@@ -9,7 +9,7 @@ import (
 type EditOpType int
 
 const (
-	EditOpTypeNone EditOpType = iota
+	EditOpTypeUnedited EditOpType = iota
 	EditOpTypeInsert
 	EditOpTypeDelete
 	EditOpTypeReplace
@@ -197,7 +197,7 @@ func (t *Trie) getEditOps(rows [][]int, keyColumn []string, key []string) []*Edi
 			if rows[r][c] > rows[r-1][c-1] {
 				ops = append(ops, &EditOp{Type: EditOpTypeReplace, KeyPart: keyColumn[r-1], ReplaceWith: key[c-1]})
 			} else {
-				ops = append(ops, &EditOp{Type: EditOpTypeNone, KeyPart: keyColumn[r-1]})
+				ops = append(ops, &EditOp{Type: EditOpTypeUnedited, KeyPart: keyColumn[r-1]})
 			}
 			r -= 1
 			c -= 1

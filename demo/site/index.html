@@ -1,18 +1,56 @@
 <html>
-    <head>
-        <title>trie demo</title>
-        <script src="wasm_exec.js"></script>
-    </head>
-    <body>
-    </body>
-    <script>
-        let wasm_instance
-        (async function loadAndRunGoWasm() {
-            const go = new Go()
-            const wasm_module = fetch("main.wasm")
-            wasm_instance = (await WebAssembly.instantiateStreaming(wasm_module, go.importObject)).instance
-            go.run(wasm_instance)
-            console.log("Go WASM initialized")
-        })(wasm_instance)
-    </script>
+  <head>
+    <title>trie demo</title>
+    <script src="wasm_exec.js"></script>
+    <style>
+      .body {
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="body">
+      <div>
+        <input type="text" id="search" />
+      </div>
+      <div id="results">
+      </div>
+    </div>
+  </body>
+  <script>
+    let wasm_instance
+    (async function loadAndRunGoWasm() {
+      const go = new Go()
+      const wasm_module = fetch("main.wasm")
+      wasm_instance = (await WebAssembly.instantiateStreaming(wasm_module, go.importObject)).instance
+      go.run(wasm_instance)
+      console.log("Go WASM initialized")
+      // TODO: enable search
+    })(wasm_instance)
+
+    const search = document.getElementById("search")
+    const resultsEle = document.getElementById("results")
+    const onInput = (e) => {
+      // TODO: lowercase
+      const word = e.target.value
+      const results = searchWord(word)
+      let html = ""
+      for (let i = 0; i < results.words.length; i++) {
+        const word = results.words[i]
+        const noEdits = results.noEdits[i]
+        let wordHTML = ""
+        for (let j = 0; j < noEdits.length; j++) {
+          if (noEdits[j]) {
+            wordHTML += "<b>" + word[j] + "</b>"
+          } else {
+            wordHTML += word[j]
+          }
+        }
+        html += "<div>" + wordHTML + "</div>"
+      }
+      console.log(html)
+      resultsEle.innerHTML = html
+    }
+    search.addEventListener("input", onInput)
+  </script>
 </html>
