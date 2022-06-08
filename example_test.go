@@ -9,7 +9,7 @@ import (
 func printEditOps(ops []*trie.EditOp) {
 	for _, op := range ops {
 		switch op.Type {
-		case trie.EditOpTypeNone:
+		case trie.EditOpTypeNoEdit:
 			fmt.Printf("- don't edit %q\n", op.KeyPart)
 		case trie.EditOpTypeInsert:
 			fmt.Printf("- insert %q\n", op.KeyPart)

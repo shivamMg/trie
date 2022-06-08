@@ -10,10 +10,14 @@ jobs:
   deploy:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - name: Install Go
+        uses: actions/setup-go@v2
         with:
-          fetch-depth: 0    # Fetch all history for .GitInfo and .Lastmod
-
+          go-version: '^1.18'
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Create wasm module
+        run: cd demo && make build-wasm
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         if: github.ref == 'refs/heads/master'

@@ -44,7 +44,7 @@ func initTrie() {
 func getNoEdits(key []string, ops []*trie.EditOp) []interface{} {
 	uneditedLetters := make([]string, 0)
 	for _, op := range ops {
-		if op.Type == trie.EditOpTypeUnedited {
+		if op.Type == trie.EditOpTypeNoEdit {
 			uneditedLetters = append(uneditedLetters, op.KeyPart)
 		}
 	}

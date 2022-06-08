@@ -36,4 +36,5 @@ jobs:
           go-version: '^1.18'
       - name: Checkout code
         uses: actions/checkout@v2
-      - run: go test ./...
+      - name: Run tests
+        run: go test ./...

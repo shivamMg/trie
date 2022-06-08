@@ -1,6 +1,6 @@
 .PHONY: bindata
 bindata:
-	cd wasm && go-bindata -nometadata -nocompress words.txt
+	go-bindata -nometadata -nocompress -o wasm/bindata.go -pkg main words.txt
 
 .PHONY: build-wasm
 build-wasm:
