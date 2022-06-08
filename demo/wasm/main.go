@@ -61,19 +61,35 @@ func getNoEdits(key []string, ops []*trie.EditOp) []interface{} {
 	return noEdits
 }
 
+func getNoEditsForPrefixSearch(wordLen int, keyLen int) []interface{} {
+	noEdits := make([]interface{}, keyLen)
+	for i := 0; i < keyLen; i++ {
+		noEdits[i] = i < wordLen
+	}
+	return noEdits
+}
+
 func searchWord(this js.Value, args []js.Value) interface{} {
 	mu.Lock()
 	defer mu.Unlock()
 	word := args[0].String()
+	prefix := args[1].Bool()
 	key := strings.Split(word, "")
-	results := tri.Search(key, trie.WithMaxEditDistance(3), trie.WithEditOps(),
-		trie.WithTopKLeastEdited(), trie.WithMaxResults(10))
+	opts := []func(*trie.SearchOptions){trie.WithMaxResults(10)}
+	if !prefix {
+		opts = append(opts, trie.WithMaxEditDistance(3), trie.WithEditOps(), trie.WithTopKLeastEdited())
+	}
+	results := tri.Search(key, opts...)
 	n := len(results.Results)
 	words := make([]interface{}, n)
 	noEdits := make([]interface{}, n)
 	for i, res := range results.Results {
 		words[i] = strings.Join(res.Key, "")
-		noEdits[i] = getNoEdits(res.Key, res.EditOps)
+		if prefix {
+			noEdits[i] = getNoEditsForPrefixSearch(len(word), len(res.Key))
+		} else {
+			noEdits[i] = getNoEdits(res.Key, res.EditOps)
+		}
 	}
 	return map[string]interface{}{
 		"words":   words,
