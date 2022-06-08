@@ -48,7 +48,6 @@ type SearchOptions struct {
 	maxEditDistance int
 	editOps         bool
 	topKLeastEdited bool
-	topK            int
 }
 
 func WithExactKey() func(*SearchOptions) {
@@ -83,13 +82,9 @@ func WithEditOps() func(*SearchOptions) {
 	}
 }
 
-func WithTopKLeastEdited(k int) func(*SearchOptions) {
-	if k <= 0 {
-		panic(errors.New("invalid usage: k must be greater than zero"))
-	}
+func WithTopKLeastEdited() func(*SearchOptions) {
 	return func(so *SearchOptions) {
 		so.topKLeastEdited = true
-		so.topK = k
 	}
 }
 
@@ -110,8 +105,8 @@ func (t *Trie) Search(key []string, options ...func(*SearchOptions)) *SearchResu
 	if opts.exactKey && opts.maxResults {
 		panic(errors.New("invalid usage: WithExactKey() must not be passed with WithMaxResults()"))
 	}
-	if opts.maxResults && opts.topKLeastEdited {
-		panic(errors.New("invalid usage: WithMaxResults() must not be passed with WithTopKLeastEdited()"))
+	if opts.topKLeastEdited && !opts.maxResults {
+		panic(errors.New("invalid usage: WithTopKLeastEdited() must not be passed without WithMaxResults()"))
 	}
 
 	if opts.editDistance {
@@ -183,7 +178,7 @@ func (t *Trie) buildWithEditDistance(results *SearchResults, node *Node, keyColu
 		if opts.topKLeastEdited {
 			results.tiebreakerCount++
 			result.tiebreaker = results.tiebreakerCount
-			if results.heap.Len() < opts.topK {
+			if results.heap.Len() < opts.maxResultsCount {
 				heap.Push(results.heap, result)
 			} else if (*results.heap)[0].EditCount > result.EditCount {
 				heap.Pop(results.heap)

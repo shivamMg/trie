@@ -67,7 +67,7 @@ func searchWord(this js.Value, args []js.Value) interface{} {
 	word := args[0].String()
 	key := strings.Split(word, "")
 	results := tri.Search(key, trie.WithMaxEditDistance(3), trie.WithEditOps(),
-		trie.WithTopKLeastEdited(10))
+		trie.WithTopKLeastEdited(), trie.WithMaxResults(10))
 	n := len(results.Results)
 	words := make([]interface{}, n)
 	noEdits := make([]interface{}, n)

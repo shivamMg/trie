@@ -173,7 +173,7 @@ func TestTrie_Search(t *testing.T) {
 		{
 			name:         "edit-distance-one-edit-with-topk",
 			inputKey:     []string{"the", "tree"},
-			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(1), trie.WithTopKLeastEdited(1)},
+			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(1), trie.WithTopKLeastEdited(), trie.WithMaxResults(1)},
 			expectedResults: &trie.SearchResults{
 				Results: []*trie.SearchResult{
 					{Key: []string{"the"}, Value: 1, EditCount: 1},
@@ -183,7 +183,7 @@ func TestTrie_Search(t *testing.T) {
 		{
 			name:         "edit-distance-two-edits-with-edit-opts-with-topk",
 			inputKey:     []string{"the", "tree"},
-			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(2), trie.WithEditOps(), trie.WithTopKLeastEdited(4)},
+			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(2), trie.WithEditOps(), trie.WithTopKLeastEdited(), trie.WithMaxResults(4)},
 			expectedResults: &trie.SearchResults{
 				Results: []*trie.SearchResult{
 					{Key: []string{"the"}, Value: 1, EditCount: 1, EditOps: []*trie.EditOp{
@@ -211,7 +211,7 @@ func TestTrie_Search(t *testing.T) {
 		{
 			name:         "edit-distance-two-edits-with-two-topk",
 			inputKey:     []string{"the", "tree"},
-			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(2), trie.WithTopKLeastEdited(2)},
+			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(2), trie.WithTopKLeastEdited(), trie.WithMaxResults(2)},
 			expectedResults: &trie.SearchResults{
 				Results: []*trie.SearchResult{
 					{Key: []string{"the"}, Value: 1, EditCount: 1},
@@ -248,15 +248,6 @@ func TestTrie_Search_InvalidUsage_MaxResults_LessThanZero(t *testing.T) {
 	})
 }
 
-func TestTrie_Search_InvalidUsage_TopK_LessThanZeroK(t *testing.T) {
-	assert.PanicsWithError(t, "invalid usage: k must be greater than zero", func() {
-		trie.WithTopKLeastEdited(0)
-	})
-	assert.PanicsWithError(t, "invalid usage: k must be greater than zero", func() {
-		trie.WithTopKLeastEdited(-1)
-	})
-}
-
 func TestTrie_Search_InvalidUsage_EditOpsWithoutMaxEditDistance(t *testing.T) {
 	tri := trie.New()
 
@@ -269,7 +260,7 @@ func TestTrie_Search_InvalidUsage_TopKWithoutMaxEditDistance(t *testing.T) {
 	tri := trie.New()
 
 	assert.PanicsWithError(t, "invalid usage: WithTopKLeastEdited() must not be passed without WithMaxEditDistance()", func() {
-		tri.Search(nil, trie.WithTopKLeastEdited(1))
+		tri.Search(nil, trie.WithTopKLeastEdited())
 	})
 }
 
@@ -289,10 +280,10 @@ func TestTrie_Search_InvalidUsage_ExactKeyWithMaxResults(t *testing.T) {
 	})
 }
 
-func TestTrie_Search_InvalidUsage_MaxResultsWithTopKLeastEdited(t *testing.T) {
+func TestTrie_Search_InvalidUsage_TopKLeastEditedWithoutMaxResults(t *testing.T) {
 	tri := trie.New()
 
-	assert.PanicsWithError(t, "invalid usage: WithMaxResults() must not be passed with WithTopKLeastEdited()", func() {
-		tri.Search(nil, trie.WithMaxResults(1), trie.WithMaxEditDistance(1), trie.WithTopKLeastEdited(1))
+	assert.PanicsWithError(t, "invalid usage: WithTopKLeastEdited() must not be passed without WithMaxResults()", func() {
+		tri.Search(nil, trie.WithMaxEditDistance(1), trie.WithTopKLeastEdited())
 	})
 }

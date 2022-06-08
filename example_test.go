@@ -76,7 +76,7 @@ func Example() {
 	// - replace "apple" with "the"
 	// - don't edit "tree"
 
-	results = tri.Search(key, trie.WithMaxEditDistance(2), trie.WithTopKLeastEdited(2))
+	results = tri.Search(key, trie.WithMaxEditDistance(2), trie.WithTopKLeastEdited(), trie.WithMaxResults(2))
 	for _, res := range results.Results {
 		fmt.Println(res.Key, res.Value, res.EditCount)
 	}
