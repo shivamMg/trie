@@ -4,7 +4,6 @@
 
 package main
 
-
 import (
 	"fmt"
 	"io/ioutil"
@@ -13,7 +12,6 @@ import (
 	"strings"
 	"time"
 )
-
 
 type asset struct {
 	bytes []byte
@@ -47366,8 +47364,6 @@ func bindataWordsTxtBytes() ([]byte, error) {
 	return _bindataWordsTxt, nil
 }
 
-
-
 func bindataWordsTxt() (*asset, error) {
 	bytes, err := bindataWordsTxtBytes()
 	if err != nil {
@@ -47375,18 +47371,17 @@ func bindataWordsTxt() (*asset, error) {
 	}
 
 	info := bindataFileInfo{
-		name: "words.txt",
-		size: 0,
+		name:        "words.txt",
+		size:        0,
 		md5checksum: "",
-		mode: os.FileMode(0),
-		modTime: time.Unix(0, 0),
+		mode:        os.FileMode(0),
+		modTime:     time.Unix(0, 0),
 	}
 
 	a := &asset{bytes: bytes, info: info}
 
 	return a, nil
 }
-
 
 //
 // Asset loads and returns the asset for the given name.
@@ -47478,18 +47473,18 @@ func AssetDir(name string) ([]string, error) {
 			node = node.Children[p]
 			if node == nil {
 				return nil, &os.PathError{
-					Op: "open",
+					Op:   "open",
 					Path: name,
-					Err: os.ErrNotExist,
+					Err:  os.ErrNotExist,
 				}
 			}
 		}
 	}
 	if node.Func != nil {
 		return nil, &os.PathError{
-			Op: "open",
+			Op:   "open",
 			Path: name,
-			Err: os.ErrNotExist,
+			Err:  os.ErrNotExist,
 		}
 	}
 	rv := make([]string, 0, len(node.Children))
@@ -47498,7 +47493,6 @@ func AssetDir(name string) ([]string, error) {
 	}
 	return rv, nil
 }
-
 
 type bintree struct {
 	Func     func() (*asset, error)
