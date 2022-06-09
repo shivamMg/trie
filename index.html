@@ -4,9 +4,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="wasm_exec.js"></script>
     <style>
+      a {
+        color: #1c46ed;
+      }
       .container {
-        font-family: sans-serif;
-        font-size: 20px;
+        font-family: monospace;
+        font-size: 16px;
         border-radius: 5px;
         background-color: #f2f2f2;
         padding: 20px;
@@ -19,7 +22,7 @@
         }
       }
       #search {
-        font-family: sans-serif;
+        font-family: monospace;
         font-size: 20px;
         width: 100%;
         padding: 12px 10px;
@@ -29,11 +32,13 @@
         box-sizing: border-box;
       }
       #results {
+        font-family: monospace;
+        font-size: 20px;
         width: 100%;
         padding: 12px 10px;
         display: inline-block;
       }
-      .prefix-container {
+      .checkbox-container {
         padding: 12px 10px;
       }
     </style>
@@ -43,17 +48,17 @@
       <div class="container">
         <div>
           <p>
-            This is a WebAssembly demo for auto-completion using the <a href="https://github.com/shivamMg/trie" target="_blank">trie</a> Go library.
-            The WASM module contains a Trie populated with English dictionary words. Auto-completion is:
-            <ol>
-              <li>Approximate (with at most 3 edits), if Prefix Search is unchecked</li>
-              <li>Prefix-based, if Prefix Search is checked</li>
-            </ol>
+            This is a WebAssembly demo for auto-completion using the <a href="https://github.com/shivamMg/trie" target="_blank">trie Go library</a>.
+            The WASM module contains a Trie populated with English dictionary words.
+          </p>
+          <p>
+            The default search is prefix based. If "Appoximate search" is checked, then the returned results will be at most 3
+            <a href="https://en.wikipedia.org/wiki/Edit_distance" target="_blank">edit distance</a> away and in least-edited-first order.
           </p>
         </div>
-        <div class="prefix-container">
-          <input type="checkbox" id="prefix" />
-          <label for="prefix">Prefix Search</label>
+        <div class="checkbox-container">
+          <input type="checkbox" id="approximate-check" />
+          <label for="approximate-check">Approximate search</label>
         </div>
         <div>
           <input type="text" id="search" />
@@ -64,15 +69,15 @@
     </div>
   </body>
   <script>
-    const prefixEle = document.getElementById("prefix")
-    const searchEle = document.getElementById("search")
-    const resultsEle = document.getElementById("results")
-    prefixEle.disabled = true
-    searchEle.disabled = true
-    searchEle.placeholder = "Loading..."
+    const checkboxElem = document.getElementById("approximate-check")
+    const searchElem = document.getElementById("search")
+    const resultsElem = document.getElementById("results")
+    checkboxElem.disabled = true
+    searchElem.disabled = true
+    searchElem.placeholder = "Loading..."
 
-    const resultsHTML = (word, prefix) => {
-      const results = searchWord(word, prefix)
+    const resultsHTML = (word, approximate) => {
+      const results = searchWord(word, approximate)
       let html = ""
       for (let i = 0; i < results.words.length; i++) {
         const word = results.words[i]
@@ -90,26 +95,26 @@
       return html
     }
 
-    let wasm_instance
+    let wasmInstance
     (async function loadAndRunGoWasm() {
       const go = new Go()
-      const wasm_module = fetch("main.wasm")
+      const wasmModule = fetch("main.wasm")
       if (WebAssembly.instantiateStreaming){
-        wasm_instance = (await WebAssembly.instantiateStreaming(wasm_module, go.importObject)).instance
+        wasmInstance = (await WebAssembly.instantiateStreaming(wasmModule, go.importObject)).instance
       } else{
-        wasm_instance = (await WebAssembly.instantiate(await ((await wasm_module).arrayBuffer()), go.importObject)).instance
+        wasmInstance = (await WebAssembly.instantiate(await ((await wasmModule).arrayBuffer()), go.importObject)).instance
       }
-      go.run(wasm_instance)
+      go.run(wasmInstance)
       console.log("Go WASM initialized")
-      prefixEle.disabled = false
-      searchEle.disabled = false
-      searchEle.placeholder = "Search a word"
-      resultsEle.innerHTML = resultsHTML("", false)
-    })(wasm_instance, searchEle, resultsEle, resultsHTML)
+      checkboxElem.disabled = false
+      searchElem.disabled = false
+      searchElem.placeholder = "Search a word"
+      resultsElem.innerHTML = resultsHTML("", false)
+    })(wasmInstance, searchElem, resultsElem, resultsHTML)
 
-    searchEle.addEventListener("input", (e) => {
+    searchElem.addEventListener("input", (e) => {
       const word = e.target.value.toLowerCase()
-      resultsEle.innerHTML = resultsHTML(word, prefixEle.checked)
+      resultsElem.innerHTML = resultsHTML(word, checkboxElem.checked)
     })
   </script>
 </html>
