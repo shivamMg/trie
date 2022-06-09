@@ -84,10 +84,10 @@ func searchWord(this js.Value, args []js.Value) interface{} {
 			"noEdits": []interface{}{},
 		}
 	}
-	prefix := args[1].Bool()
+	approximate := args[1].Bool()
 	key := strings.Split(word, "")
 	opts := []func(*trie.SearchOptions){trie.WithMaxResults(10)}
-	if !prefix {
+	if approximate {
 		opts = append(opts, trie.WithMaxEditDistance(3), trie.WithEditOps(), trie.WithTopKLeastEdited())
 	}
 	results := tri.Search(key, opts...)
@@ -96,10 +96,10 @@ func searchWord(this js.Value, args []js.Value) interface{} {
 	noEdits := make([]interface{}, n)
 	for i, res := range results.Results {
 		words[i] = strings.Join(res.Key, "")
-		if prefix {
-			noEdits[i] = getNoEditsForPrefixSearch(len(word), len(res.Key))
-		} else {
+		if approximate {
 			noEdits[i] = getNoEdits(res.Key, res.EditOps)
+		} else {
+			noEdits[i] = getNoEditsForPrefixSearch(len(word), len(res.Key))
 		}
 	}
 	return map[string]interface{}{
