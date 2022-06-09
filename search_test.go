@@ -228,6 +228,17 @@ func TestTrie_Search(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:         "edit-distance-no-key",
+			inputKey:     []string{},
+			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(2), trie.WithTopKLeastEdited(), trie.WithMaxResults(2)},
+			expectedResults: &trie.SearchResults{
+				Results: []*trie.SearchResult{
+					{Key: []string{"the"}, Value: 1, EditCount: 1},
+					{Key: []string{"an", "umbrella"}, Value: 6, EditCount: 2},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {

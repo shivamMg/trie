@@ -123,14 +123,18 @@ func (t *Trie) searchWithEditDistance(key []string, opts *SearchOptions) *Search
 	for i := 0; i < columns; i++ {
 		newRow[i] = i
 	}
-	rows := make([][]int, 1, len(key))
+	m := len(key)
+	if m == 0 {
+		m = 1
+	}
+	rows := make([][]int, 1, m)
 	rows[0] = newRow
 	results := &SearchResults{}
 	if opts.topKLeastEdited {
 		results.heap = &searchResultMaxHeap{}
 	}
 
-	keyColumn := make([]string, 1, len(key))
+	keyColumn := make([]string, 1, m)
 	for dllNode := t.root.childrenDLL.head; dllNode != nil; dllNode = dllNode.next {
 		node := dllNode.trieNode
 		keyColumn[0] = node.keyPart
