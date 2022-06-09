@@ -15,6 +15,8 @@ import (
 var (
 	mu  sync.Mutex
 	tri *trie.Trie
+
+	longestWordLen int
 )
 
 func init() {
@@ -36,6 +38,9 @@ func initTrie() {
 			fmt.Println(err)
 		}
 		word = strings.TrimRight(word, "\n")
+		if len(word) > longestWordLen {
+			longestWordLen = len(word)
+		}
 		key := strings.Split(word, "")
 		tri.Put(key, struct{}{})
 	}
@@ -73,6 +78,12 @@ func searchWord(this js.Value, args []js.Value) interface{} {
 	mu.Lock()
 	defer mu.Unlock()
 	word := args[0].String()
+	if len(word) > longestWordLen {
+		return map[string]interface{}{
+			"words":   []interface{}{},
+			"noEdits": []interface{}{},
+		}
+	}
 	prefix := args[1].Bool()
 	key := strings.Split(word, "")
 	opts := []func(*trie.SearchOptions){trie.WithMaxResults(10)}
