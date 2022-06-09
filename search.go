@@ -264,7 +264,9 @@ func (t *Trie) search(prefixKey []string, opts *SearchOptions) *SearchResults {
 
 func (t *Trie) build(results *SearchResults, node *Node, prefixKey []string, opts *SearchOptions) (stop bool) {
 	if node.isTerminal {
-		result := &SearchResult{Key: prefixKey, Value: node.value}
+		key := make([]string, len(prefixKey))
+		copy(key, prefixKey)
+		result := &SearchResult{Key: key, Value: node.value}
 		results.Results = append(results.Results, result)
 		if opts.maxResults && len(results.Results) == opts.maxResultsCount {
 			return true

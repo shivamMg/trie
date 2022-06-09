@@ -1,10 +1,19 @@
 package trie_test
 
 import (
+	"bufio"
+	"io"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/shivamMg/trie"
 	"github.com/stretchr/testify/assert"
+)
+
+var (
+	benchmarkResults *trie.SearchResults // https://dave.cheney.net/2013/06/30/how-to-write-benchmarks-in-go
+	wordsTrie        *trie.Trie
 )
 
 func TestTrie_Search(t *testing.T) {
@@ -230,6 +239,36 @@ func TestTrie_Search(t *testing.T) {
 	}
 }
 
+func TestTrie_Search_WordsTrie(t *testing.T) {
+	tri := getWordsTrie()
+	testCases := []struct {
+		name            string
+		inputKey        []string
+		inputOptions    []func(*trie.SearchOptions)
+		expectedResults *trie.SearchResults
+	}{
+		{
+			name:     "aband",
+			inputKey: strings.Split("aband", ""),
+			expectedResults: &trie.SearchResults{
+				Results: []*trie.SearchResult{
+					{Key: strings.Split("abandon", "")},
+					{Key: strings.Split("abandoned", "")},
+					{Key: strings.Split("abandoning", "")},
+					{Key: strings.Split("abandonment", "")},
+				},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			actual := tri.Search(tc.inputKey, tc.inputOptions...)
+			assert.Len(t, actual.Results, len(tc.expectedResults.Results))
+			assert.Equal(t, tc.expectedResults, actual)
+		})
+	}
+}
+
 func TestTrie_Search_InvalidUsage_EditDistance_LessThanZeroDistance(t *testing.T) {
 	assert.PanicsWithError(t, "invalid usage: maxDistance must be greater than zero", func() {
 		trie.WithMaxEditDistance(0)
@@ -286,4 +325,79 @@ func TestTrie_Search_InvalidUsage_TopKLeastEditedWithoutMaxResults(t *testing.T)
 	assert.PanicsWithError(t, "invalid usage: WithTopKLeastEdited() must not be passed without WithMaxResults()", func() {
 		tri.Search(nil, trie.WithMaxEditDistance(1), trie.WithTopKLeastEdited())
 	})
+}
+
+func BenchmarkTrie_Search_WordsTrie(b *testing.B) {
+	tri := getWordsTrie()
+	benchmarks := []struct {
+		name         string
+		inputKey     []string
+		inputOptions []func(*trie.SearchOptions)
+	}{
+		{
+			name:     "prefix",
+			inputKey: []string{"a", "b"},
+		},
+		{
+			name:         "prefix-with-max-results",
+			inputKey:     []string{"a", "b"},
+			inputOptions: []func(*trie.SearchOptions){trie.WithMaxResults(20)},
+		},
+		{
+			name:         "edit-distance",
+			inputKey:     []string{"s", "o", "m", "e", "d", "a", "y"},
+			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(5)},
+		},
+		{
+			name:         "edit-distance-with-edit-ops",
+			inputKey:     []string{"s", "o", "m", "e", "d", "a", "y"},
+			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(5), trie.WithEditOps()},
+		},
+		{
+			name:         "edit-distance-with-edit-ops-with-max-results",
+			inputKey:     []string{"s", "o", "m", "e", "d", "a", "y"},
+			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(5), trie.WithEditOps(), trie.WithMaxResults(20)},
+		},
+		{
+			name:     "edit-distance-with-edit-ops-with-max-results-with-top-k",
+			inputKey: []string{"s", "o", "m", "e", "d", "a", "y"},
+			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(5), trie.WithEditOps(), trie.WithMaxResults(20),
+				trie.WithTopKLeastEdited()},
+		},
+	}
+	var results *trie.SearchResults
+	for _, bm := range benchmarks {
+		b.Run(bm.name, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				results = tri.Search([]string{"a", "b"}, bm.inputOptions...)
+			}
+			benchmarkResults = results
+		})
+	}
+}
+
+func getWordsTrie() *trie.Trie {
+	if wordsTrie != nil {
+		return wordsTrie
+	}
+	f, err := os.Open("./demo/words.txt")
+	if err != nil {
+		panic(err)
+	}
+	tri := trie.New()
+	r := bufio.NewReader(f)
+	for {
+		word, err := r.ReadString('\n')
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			panic(err)
+		}
+		word = strings.TrimRight(word, "\n")
+		key := strings.Split(word, "")
+		tri.Put(key, nil)
+	}
+	wordsTrie = tri
+	return tri
 }
