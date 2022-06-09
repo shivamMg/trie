@@ -66,7 +66,7 @@ func TestTrie_getEditOps(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("from %v to %v", tc.fromKeyColumn, tc.toKey), func(t *testing.T) {
 			tri := New()
-			actual := tri.getEditOps(tc.rows, tc.fromKeyColumn, tc.toKey)
+			actual := tri.getEditOps(&tc.rows, &tc.fromKeyColumn, tc.toKey)
 			assert.Equal(t, tc.expectedOps, actual)
 		})
 	}

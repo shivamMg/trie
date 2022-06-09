@@ -123,15 +123,18 @@ func (t *Trie) searchWithEditDistance(key []string, opts *SearchOptions) *Search
 	for i := 0; i < columns; i++ {
 		newRow[i] = i
 	}
-	rows := [][]int{newRow}
+	rows := make([][]int, 1, len(key))
+	rows[0] = newRow
 	results := &SearchResults{}
 	if opts.topKLeastEdited {
 		results.heap = &searchResultMaxHeap{}
 	}
 
+	keyColumn := make([]string, 1, len(key))
 	for dllNode := t.root.childrenDLL.head; dllNode != nil; dllNode = dllNode.next {
 		node := dllNode.trieNode
-		if t.buildWithEditDistance(results, node, []string{node.keyPart}, rows, key, opts) {
+		keyColumn[0] = node.keyPart
+		if t.buildWithEditDistance(results, node, &keyColumn, &rows, key, opts) {
 			break
 		}
 	}
@@ -150,14 +153,14 @@ func (t *Trie) searchWithEditDistance(key []string, opts *SearchOptions) *Search
 	return results
 }
 
-func (t *Trie) buildWithEditDistance(results *SearchResults, node *Node, keyColumn []string, rows [][]int, key []string, opts *SearchOptions) (stop bool) {
-	prevRow := rows[len(rows)-1]
+func (t *Trie) buildWithEditDistance(results *SearchResults, node *Node, keyColumn *[]string, rows *[][]int, key []string, opts *SearchOptions) (stop bool) {
+	prevRow := (*rows)[len(*rows)-1]
 	columns := len(key) + 1
 	newRow := make([]int, columns)
 	newRow[0] = prevRow[0] + 1
 	for i := 1; i < columns; i++ {
 		replaceCost := 1
-		if key[i-1] == keyColumn[len(keyColumn)-1] {
+		if key[i-1] == (*keyColumn)[len(*keyColumn)-1] {
 			replaceCost = 0
 		}
 		newRow[i] = min(
@@ -166,25 +169,33 @@ func (t *Trie) buildWithEditDistance(results *SearchResults, node *Node, keyColu
 			prevRow[i-1]+replaceCost, // substitution
 		)
 	}
-	rows = append(rows, newRow)
+	*rows = append(*rows, newRow)
 
 	if newRow[columns-1] <= opts.maxEditDistance && node.isTerminal {
-		resultKey := make([]string, len(keyColumn))
-		copy(resultKey, keyColumn)
-		result := &SearchResult{Key: resultKey, Value: node.value, EditCount: newRow[columns-1]}
-		if opts.editOps {
-			result.EditOps = t.getEditOps(rows, keyColumn, key)
+		editCount := newRow[columns-1]
+		lazyCreate := func() *SearchResult { // optimization for: case when topKLeastEdited=true and result is not pushed to heap
+			resultKey := make([]string, len(*keyColumn))
+			copy(resultKey, *keyColumn)
+			result := &SearchResult{Key: resultKey, Value: node.value, EditCount: editCount}
+			if opts.editOps {
+				result.EditOps = t.getEditOps(rows, keyColumn, key)
+			}
+			return result
 		}
 		if opts.topKLeastEdited {
 			results.tiebreakerCount++
-			result.tiebreaker = results.tiebreakerCount
 			if results.heap.Len() < opts.maxResultsCount {
+				result := lazyCreate()
+				result.tiebreaker = results.tiebreakerCount
 				heap.Push(results.heap, result)
-			} else if (*results.heap)[0].EditCount > result.EditCount {
+			} else if (*results.heap)[0].EditCount > editCount {
+				result := lazyCreate()
+				result.tiebreaker = results.tiebreakerCount
 				heap.Pop(results.heap)
 				heap.Push(results.heap, result)
 			}
 		} else {
+			result := lazyCreate()
 			results.Results = append(results.Results, result)
 			if opts.maxResults && len(results.Results) == opts.maxResultsCount {
 				return true
@@ -195,40 +206,45 @@ func (t *Trie) buildWithEditDistance(results *SearchResults, node *Node, keyColu
 	if min(newRow...) <= opts.maxEditDistance {
 		for dllNode := node.childrenDLL.head; dllNode != nil; dllNode = dllNode.next {
 			child := dllNode.trieNode
-			if t.buildWithEditDistance(results, child, append(keyColumn, child.keyPart), rows, key, opts) {
+			*keyColumn = append(*keyColumn, child.keyPart)
+			stop := t.buildWithEditDistance(results, child, keyColumn, rows, key, opts)
+			*keyColumn = (*keyColumn)[:len(*keyColumn)-1]
+			if stop {
 				return true
 			}
 		}
 	}
+
+	*rows = (*rows)[:len(*rows)-1]
 	return false
 }
 
-func (t *Trie) getEditOps(rows [][]int, keyColumn []string, key []string) []*EditOp {
+func (t *Trie) getEditOps(rows *[][]int, keyColumn *[]string, key []string) []*EditOp {
 	// https://gist.github.com/jlherren/d97839b1276b9bd7faa930f74711a4b6
 	ops := make([]*EditOp, 0, len(key))
-	r, c := len(rows)-1, len(rows[0])-1
+	r, c := len(*rows)-1, len((*rows)[0])-1
 	for r > 0 || c > 0 {
 		insertionCost, deletionCost, substitutionCost := math.MaxInt, math.MaxInt, math.MaxInt
 		if c > 0 {
-			insertionCost = rows[r][c-1]
+			insertionCost = (*rows)[r][c-1]
 		}
 		if r > 0 {
-			deletionCost = rows[r-1][c]
+			deletionCost = (*rows)[r-1][c]
 		}
 		if r > 0 && c > 0 {
-			substitutionCost = rows[r-1][c-1]
+			substitutionCost = (*rows)[r-1][c-1]
 		}
 		minCost := min(insertionCost, deletionCost, substitutionCost)
 		if minCost == substitutionCost {
-			if rows[r][c] > rows[r-1][c-1] {
-				ops = append(ops, &EditOp{Type: EditOpTypeReplace, KeyPart: keyColumn[r-1], ReplaceWith: key[c-1]})
+			if (*rows)[r][c] > (*rows)[r-1][c-1] {
+				ops = append(ops, &EditOp{Type: EditOpTypeReplace, KeyPart: (*keyColumn)[r-1], ReplaceWith: key[c-1]})
 			} else {
-				ops = append(ops, &EditOp{Type: EditOpTypeNoEdit, KeyPart: keyColumn[r-1]})
+				ops = append(ops, &EditOp{Type: EditOpTypeNoEdit, KeyPart: (*keyColumn)[r-1]})
 			}
 			r -= 1
 			c -= 1
 		} else if minCost == deletionCost {
-			ops = append(ops, &EditOp{Type: EditOpTypeDelete, KeyPart: keyColumn[r-1]})
+			ops = append(ops, &EditOp{Type: EditOpTypeDelete, KeyPart: (*keyColumn)[r-1]})
 			r -= 1
 		} else if minCost == insertionCost {
 			ops = append(ops, &EditOp{Type: EditOpTypeInsert, KeyPart: key[c-1]})
@@ -258,14 +274,14 @@ func (t *Trie) search(prefixKey []string, opts *SearchOptions) *SearchResults {
 		}
 		return results
 	}
-	t.build(results, node, prefixKey, opts)
+	t.build(results, node, &prefixKey, opts)
 	return results
 }
 
-func (t *Trie) build(results *SearchResults, node *Node, prefixKey []string, opts *SearchOptions) (stop bool) {
+func (t *Trie) build(results *SearchResults, node *Node, prefixKey *[]string, opts *SearchOptions) (stop bool) {
 	if node.isTerminal {
-		key := make([]string, len(prefixKey))
-		copy(key, prefixKey)
+		key := make([]string, len(*prefixKey))
+		copy(key, *prefixKey)
 		result := &SearchResult{Key: key, Value: node.value}
 		results.Results = append(results.Results, result)
 		if opts.maxResults && len(results.Results) == opts.maxResultsCount {
@@ -275,7 +291,10 @@ func (t *Trie) build(results *SearchResults, node *Node, prefixKey []string, opt
 
 	for dllNode := node.childrenDLL.head; dllNode != nil; dllNode = dllNode.next {
 		child := dllNode.trieNode
-		if t.build(results, child, append(prefixKey, child.keyPart), opts) {
+		*prefixKey = append(*prefixKey, child.keyPart)
+		stop := t.build(results, child, prefixKey, opts)
+		*prefixKey = (*prefixKey)[:len(*prefixKey)-1]
+		if stop {
 			return true
 		}
 	}
