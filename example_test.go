@@ -23,7 +23,7 @@ func printEditOps(ops []*trie.EditOp) {
 
 func Example() {
 	tri := trie.New()
-	// Put keys and values
+	// Put keys ([]string) and values (any)
 	tri.Put([]string{"the"}, 1)
 	tri.Put([]string{"the", "quick", "brown", "fox"}, 2)
 	tri.Put([]string{"the", "quick", "sports", "car"}, 3)
@@ -32,7 +32,7 @@ func Example() {
 	tri.Put([]string{"an", "umbrella"}, 6)
 
 	tri.Root().Print()
-	// Output (full trie with terminals ($)):
+	// Output (full trie with terminals ending with ($)):
 	// ^
 	// ├─ the ($)
 	// │  ├─ quick
@@ -51,21 +51,21 @@ func Example() {
 	for _, res := range results.Results {
 		fmt.Println(res.Key, res.Value)
 	}
-	// Output (prefix search):
+	// Output (prefix-based search):
 	// [the quick brown fox] 2
 	// [the quick sports car] 3
 
 	key := []string{"the", "tree"}
-	results = tri.Search(key, trie.WithMaxEditDistance(2), // Edit can be insert, delete, replace
+	results = tri.Search(key, trie.WithMaxEditDistance(2), // An edit can be insert, delete, replace
 		trie.WithEditOps())
 	for _, res := range results.Results {
-		fmt.Println(res.Key, res.Value, res.EditCount) // EditCount is number of edits
+		fmt.Println(res.Key, res.EditCount) // EditCount is number of edits needed to convert to [the tree]
 	}
 	// Output (results not more than 2 edits away from [the tree]):
-	// [the] 1 1
-	// [the green tree] 4 1
-	// [an apple tree] 5 2
-	// [an umbrella] 6 2
+	// [the] 1
+	// [the green tree] 1
+	// [an apple tree] 2
+	// [an umbrella] 2
 
 	result := results.Results[2]
 	fmt.Printf("To convert %v to %v:\n", result.Key, key)
