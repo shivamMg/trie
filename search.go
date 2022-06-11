@@ -15,9 +15,15 @@ const (
 	EditOpTypeReplace
 )
 
+// EditOp represents an Edit Operation.
 type EditOp struct {
-	Type        EditOpType
-	KeyPart     string
+	Type EditOpType
+	// KeyPart:
+	// - In case of NoEdit, KeyPart is to be retained.
+	// - In case of Insert, KeyPart is to be inserted in the key.
+	// - In case of Delete/Replace, KeyPart is the part of the key on which delete/replace is performed.
+	KeyPart string
+	// ReplaceWith is set for Type=EditOpTypeReplace
 	ReplaceWith string
 }
 
@@ -28,11 +34,16 @@ type SearchResults struct {
 }
 
 type SearchResult struct {
-	Key        []string
-	Value      interface{}
-	EditCount  int
+	// Key is the key that was Put() into the Trie.
+	Key []string
+	// Value is the value that was Put() into the Trie.
+	Value interface{}
+	// EditCount is the number of edits (insert/delete/replace) needed to convert Key into the Search()-ed key.
+	EditCount int
+	// EditOps is the list of edit operations (see EditOpType) needed to convert Key into the Search()-ed key.
+	EditOps []*EditOp
+
 	tiebreaker int
-	EditOps    []*EditOp
 }
 
 type SearchOptions struct {
@@ -50,12 +61,16 @@ type SearchOptions struct {
 	topKLeastEdited bool
 }
 
+// WithExactKey can be passed to Search(). When passed, Search() returns just the result with
+// Key=Search()-ed key. If the key does not exist, result list will be empty.
 func WithExactKey() func(*SearchOptions) {
 	return func(so *SearchOptions) {
 		so.exactKey = true
 	}
 }
 
+// WithMaxResults can be passed to Search(). When passed, Search() will return at most maxResults
+// number of results.
 func WithMaxResults(maxResults int) func(*SearchOptions) {
 	if maxResults <= 0 {
 		panic(errors.New("invalid usage: maxResults must be greater than zero"))
@@ -66,6 +81,18 @@ func WithMaxResults(maxResults int) func(*SearchOptions) {
 	}
 }
 
+// WithMaxEditDistance can be passed to Search(). When passed, Search() changes its default behaviour from
+// Prefix search to Edit distance search. It can be used to return "Approximate" results instead of strict
+// Prefix search results.
+//
+// maxDistance is the maximum number of edits allowed on Trie keys to consider them as a SearchResult.
+// Higher the maxDistance, more lenient and slower the search becomes.
+//
+// e.g. If a Trie stores English words, then searching for "wheat" with maxDistance=1 might return similar
+// looking words like "wheat", "cheat", "heat", "what", etc. With maxDistance=2 it might also return words like
+// "beat", "ahead", etc.
+//
+// Read about Edit distance: https://en.wikipedia.org/wiki/Edit_distance
 func WithMaxEditDistance(maxDistance int) func(*SearchOptions) {
 	if maxDistance <= 0 {
 		panic(errors.New("invalid usage: maxDistance must be greater than zero"))
@@ -76,18 +103,38 @@ func WithMaxEditDistance(maxDistance int) func(*SearchOptions) {
 	}
 }
 
+// WithEditOps can be passed to Search() alongside WithMaxEditDistance(). When passed, Search() also returns EditOps
+// for each SearchResult. EditOps can be used to determine the minimum number of edit operations needed to convert
+// a result Key into the Search()-ed key.
+//
+// e.g. Searching for "wheat" in a Trie that stores English words might return "beat". EditOps for this result might be:
+// 1. insert "w" 2. replace "b" with "h".
+//
+// There might be multiple ways to edit a key into another. EditOps represents only one.
+//
+// Computing EditOps makes Search() slower.
 func WithEditOps() func(*SearchOptions) {
 	return func(so *SearchOptions) {
 		so.editOps = true
 	}
 }
 
+// WithTopKLeastEdited can be passed to Search() alongside WithMaxEditDistance() and WithMaxResults(). When passed,
+// Search() returns maxResults number of results that have the lowest EditCounts. Results are sorted on EditCount
+// (lowest to highest).
+//
+// e.g. In a Trie that stores English words searching for "wheat" might return "wheat" (EditCount=0), "cheat" (EditCount=1),
+// "beat" (EditCount=2) - in that order.
 func WithTopKLeastEdited() func(*SearchOptions) {
 	return func(so *SearchOptions) {
 		so.topKLeastEdited = true
 	}
 }
 
+// Search() takes a key and some options to return results (see SearchResult) from the Trie.
+// Without any options, it does a Prefix search i.e. result Keys have the same prefix as key.
+// Order of the results is deterministic and will follow the order in which Put() was called for the keys.
+// See "With*" functions for options accepted by Search().
 func (t *Trie) Search(key []string, options ...func(*SearchOptions)) *SearchResults {
 	opts := &SearchOptions{}
 	for _, f := range options {

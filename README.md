@@ -10,8 +10,8 @@ Auto-completion demo can be tried at [shivamMg.github.io/trie](https://shivammg.
 
 - Keys are `[]string` instead of `string`, thereby supporting more use cases - e.g. []string{the quick brown fox} can be a key where each word will be a node in the Trie
 - Support for Put key and Delete key
-- Support for Prefix search - e.g. searching for _nation_ will return _nation_, _national_, _nationalism_, _nationalist_, etc.
-- Support for Edit distance search (aka Levenshtein distance) - e.g. searching for _wheat_ will return similar looking words like _wheat_, _cheat_, _heat_, _what_, etc.
+- Support for Prefix search - e.g. searching for _nation_ might return _nation_, _national_, _nationalism_, _nationalist_, etc.
+- Support for Edit distance search (aka Levenshtein distance) - e.g. searching for _wheat_ might return similar looking words like _wheat_, _cheat_, _heat_, _what_, etc.
 - Order of search results is deterministic. It follows insertion (Put()) order.
 
 ### Examples
