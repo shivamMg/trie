@@ -124,8 +124,8 @@ func TestTrie_Search(t *testing.T) {
 			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(1)},
 			expectedResults: &trie.SearchResults{
 				Results: []*trie.SearchResult{
-					{Key: []string{"the"}, Value: 1, EditCount: 1},
-					{Key: []string{"the", "green", "tree"}, Value: 4, EditCount: 1},
+					{Key: []string{"the"}, Value: 1, EditDistance: 1},
+					{Key: []string{"the", "green", "tree"}, Value: 4, EditDistance: 1},
 				},
 			},
 		},
@@ -135,11 +135,11 @@ func TestTrie_Search(t *testing.T) {
 			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(1), trie.WithEditOps()},
 			expectedResults: &trie.SearchResults{
 				Results: []*trie.SearchResult{
-					{Key: []string{"the"}, Value: 1, EditCount: 1, EditOps: []*trie.EditOp{
+					{Key: []string{"the"}, Value: 1, EditDistance: 1, EditOps: []*trie.EditOp{
 						{Type: trie.EditOpTypeNoEdit, KeyPart: "the"},
 						{Type: trie.EditOpTypeInsert, KeyPart: "tree"},
 					}},
-					{Key: []string{"the", "green", "tree"}, Value: 4, EditCount: 1, EditOps: []*trie.EditOp{
+					{Key: []string{"the", "green", "tree"}, Value: 4, EditDistance: 1, EditOps: []*trie.EditOp{
 						{Type: trie.EditOpTypeNoEdit, KeyPart: "the"},
 						{Type: trie.EditOpTypeDelete, KeyPart: "green"},
 						{Type: trie.EditOpTypeNoEdit, KeyPart: "tree"},
@@ -153,26 +153,26 @@ func TestTrie_Search(t *testing.T) {
 			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(2), trie.WithEditOps()},
 			expectedResults: &trie.SearchResults{
 				Results: []*trie.SearchResult{
-					{Key: []string{"the"}, Value: 1, EditCount: 1, EditOps: []*trie.EditOp{
+					{Key: []string{"the"}, Value: 1, EditDistance: 1, EditOps: []*trie.EditOp{
 						{Type: trie.EditOpTypeNoEdit, KeyPart: "the"},
 						{Type: trie.EditOpTypeInsert, KeyPart: "tree"},
 					}},
-					{Key: []string{"the", "quick", "swimmer"}, Value: 3, EditCount: 2, EditOps: []*trie.EditOp{
+					{Key: []string{"the", "quick", "swimmer"}, Value: 3, EditDistance: 2, EditOps: []*trie.EditOp{
 						{Type: trie.EditOpTypeNoEdit, KeyPart: "the"},
 						{Type: trie.EditOpTypeDelete, KeyPart: "quick"},
 						{Type: trie.EditOpTypeReplace, KeyPart: "swimmer", ReplaceWith: "tree"},
 					}},
-					{Key: []string{"the", "green", "tree"}, Value: 4, EditCount: 1, EditOps: []*trie.EditOp{
+					{Key: []string{"the", "green", "tree"}, Value: 4, EditDistance: 1, EditOps: []*trie.EditOp{
 						{Type: trie.EditOpTypeNoEdit, KeyPart: "the"},
 						{Type: trie.EditOpTypeDelete, KeyPart: "green"},
 						{Type: trie.EditOpTypeNoEdit, KeyPart: "tree"},
 					}},
-					{Key: []string{"an", "apple", "tree"}, Value: 5, EditCount: 2, EditOps: []*trie.EditOp{
+					{Key: []string{"an", "apple", "tree"}, Value: 5, EditDistance: 2, EditOps: []*trie.EditOp{
 						{Type: trie.EditOpTypeDelete, KeyPart: "an"},
 						{Type: trie.EditOpTypeReplace, KeyPart: "apple", ReplaceWith: "the"},
 						{Type: trie.EditOpTypeNoEdit, KeyPart: "tree"},
 					}},
-					{Key: []string{"an", "umbrella"}, Value: 6, EditCount: 2, EditOps: []*trie.EditOp{
+					{Key: []string{"an", "umbrella"}, Value: 6, EditDistance: 2, EditOps: []*trie.EditOp{
 						{Type: trie.EditOpTypeReplace, KeyPart: "an", ReplaceWith: "the"},
 						{Type: trie.EditOpTypeReplace, KeyPart: "umbrella", ReplaceWith: "tree"},
 					}},
@@ -185,21 +185,21 @@ func TestTrie_Search(t *testing.T) {
 			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(2), trie.WithEditOps(), trie.WithMaxResults(4)},
 			expectedResults: &trie.SearchResults{
 				Results: []*trie.SearchResult{
-					{Key: []string{"the"}, Value: 1, EditCount: 1, EditOps: []*trie.EditOp{
+					{Key: []string{"the"}, Value: 1, EditDistance: 1, EditOps: []*trie.EditOp{
 						{Type: trie.EditOpTypeNoEdit, KeyPart: "the"},
 						{Type: trie.EditOpTypeInsert, KeyPart: "tree"},
 					}},
-					{Key: []string{"the", "quick", "swimmer"}, Value: 3, EditCount: 2, EditOps: []*trie.EditOp{
+					{Key: []string{"the", "quick", "swimmer"}, Value: 3, EditDistance: 2, EditOps: []*trie.EditOp{
 						{Type: trie.EditOpTypeNoEdit, KeyPart: "the"},
 						{Type: trie.EditOpTypeDelete, KeyPart: "quick"},
 						{Type: trie.EditOpTypeReplace, KeyPart: "swimmer", ReplaceWith: "tree"},
 					}},
-					{Key: []string{"the", "green", "tree"}, Value: 4, EditCount: 1, EditOps: []*trie.EditOp{
+					{Key: []string{"the", "green", "tree"}, Value: 4, EditDistance: 1, EditOps: []*trie.EditOp{
 						{Type: trie.EditOpTypeNoEdit, KeyPart: "the"},
 						{Type: trie.EditOpTypeDelete, KeyPart: "green"},
 						{Type: trie.EditOpTypeNoEdit, KeyPart: "tree"},
 					}},
-					{Key: []string{"an", "apple", "tree"}, Value: 5, EditCount: 2, EditOps: []*trie.EditOp{
+					{Key: []string{"an", "apple", "tree"}, Value: 5, EditDistance: 2, EditOps: []*trie.EditOp{
 						{Type: trie.EditOpTypeDelete, KeyPart: "an"},
 						{Type: trie.EditOpTypeReplace, KeyPart: "apple", ReplaceWith: "the"},
 						{Type: trie.EditOpTypeNoEdit, KeyPart: "tree"},
@@ -213,7 +213,7 @@ func TestTrie_Search(t *testing.T) {
 			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(1), trie.WithTopKLeastEdited(), trie.WithMaxResults(1)},
 			expectedResults: &trie.SearchResults{
 				Results: []*trie.SearchResult{
-					{Key: []string{"the"}, Value: 1, EditCount: 1},
+					{Key: []string{"the"}, Value: 1, EditDistance: 1},
 				},
 			},
 		},
@@ -223,21 +223,21 @@ func TestTrie_Search(t *testing.T) {
 			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(2), trie.WithEditOps(), trie.WithTopKLeastEdited(), trie.WithMaxResults(4)},
 			expectedResults: &trie.SearchResults{
 				Results: []*trie.SearchResult{
-					{Key: []string{"the"}, Value: 1, EditCount: 1, EditOps: []*trie.EditOp{
+					{Key: []string{"the"}, Value: 1, EditDistance: 1, EditOps: []*trie.EditOp{
 						{Type: trie.EditOpTypeNoEdit, KeyPart: "the"},
 						{Type: trie.EditOpTypeInsert, KeyPart: "tree"},
 					}},
-					{Key: []string{"the", "green", "tree"}, Value: 4, EditCount: 1, EditOps: []*trie.EditOp{
+					{Key: []string{"the", "green", "tree"}, Value: 4, EditDistance: 1, EditOps: []*trie.EditOp{
 						{Type: trie.EditOpTypeNoEdit, KeyPart: "the"},
 						{Type: trie.EditOpTypeDelete, KeyPart: "green"},
 						{Type: trie.EditOpTypeNoEdit, KeyPart: "tree"},
 					}},
-					{Key: []string{"the", "quick", "swimmer"}, Value: 3, EditCount: 2, EditOps: []*trie.EditOp{
+					{Key: []string{"the", "quick", "swimmer"}, Value: 3, EditDistance: 2, EditOps: []*trie.EditOp{
 						{Type: trie.EditOpTypeNoEdit, KeyPart: "the"},
 						{Type: trie.EditOpTypeDelete, KeyPart: "quick"},
 						{Type: trie.EditOpTypeReplace, KeyPart: "swimmer", ReplaceWith: "tree"},
 					}},
-					{Key: []string{"an", "apple", "tree"}, Value: 5, EditCount: 2, EditOps: []*trie.EditOp{
+					{Key: []string{"an", "apple", "tree"}, Value: 5, EditDistance: 2, EditOps: []*trie.EditOp{
 						{Type: trie.EditOpTypeDelete, KeyPart: "an"},
 						{Type: trie.EditOpTypeReplace, KeyPart: "apple", ReplaceWith: "the"},
 						{Type: trie.EditOpTypeNoEdit, KeyPart: "tree"},
@@ -251,8 +251,8 @@ func TestTrie_Search(t *testing.T) {
 			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(2), trie.WithTopKLeastEdited(), trie.WithMaxResults(2)},
 			expectedResults: &trie.SearchResults{
 				Results: []*trie.SearchResult{
-					{Key: []string{"the"}, Value: 1, EditCount: 1},
-					{Key: []string{"the", "green", "tree"}, Value: 4, EditCount: 1},
+					{Key: []string{"the"}, Value: 1, EditDistance: 1},
+					{Key: []string{"the", "green", "tree"}, Value: 4, EditDistance: 1},
 				},
 			},
 		},
@@ -262,8 +262,8 @@ func TestTrie_Search(t *testing.T) {
 			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(2), trie.WithTopKLeastEdited(), trie.WithMaxResults(5)},
 			expectedResults: &trie.SearchResults{
 				Results: []*trie.SearchResult{
-					{Key: []string{"the"}, Value: 1, EditCount: 1},
-					{Key: []string{"an", "umbrella"}, Value: 6, EditCount: 2},
+					{Key: []string{"the"}, Value: 1, EditDistance: 1},
+					{Key: []string{"an", "umbrella"}, Value: 6, EditDistance: 2},
 				},
 			},
 		},
@@ -273,8 +273,8 @@ func TestTrie_Search(t *testing.T) {
 			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(2), trie.WithTopKLeastEdited(), trie.WithMaxResults(5)},
 			expectedResults: &trie.SearchResults{
 				Results: []*trie.SearchResult{
-					{Key: []string{"the"}, Value: 1, EditCount: 1},
-					{Key: []string{"an", "umbrella"}, Value: 6, EditCount: 2},
+					{Key: []string{"the"}, Value: 1, EditDistance: 1},
+					{Key: []string{"an", "umbrella"}, Value: 6, EditDistance: 2},
 				},
 			},
 		},
@@ -315,12 +315,12 @@ func TestTrie_Search_WordsTrie(t *testing.T) {
 			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(1)},
 			expectedResults: &trie.SearchResults{
 				Results: []*trie.SearchResult{
-					{Key: strings.Split("wheat", ""), EditCount: 0},
-					{Key: strings.Split("wheal", ""), EditCount: 1},
-					{Key: strings.Split("whet", ""), EditCount: 1},
-					{Key: strings.Split("what", ""), EditCount: 1},
-					{Key: strings.Split("cheat", ""), EditCount: 1},
-					{Key: strings.Split("heat", ""), EditCount: 1},
+					{Key: strings.Split("wheat", ""), EditDistance: 0},
+					{Key: strings.Split("wheal", ""), EditDistance: 1},
+					{Key: strings.Split("whet", ""), EditDistance: 1},
+					{Key: strings.Split("what", ""), EditDistance: 1},
+					{Key: strings.Split("cheat", ""), EditDistance: 1},
+					{Key: strings.Split("heat", ""), EditDistance: 1},
 				},
 			},
 		},
@@ -330,19 +330,19 @@ func TestTrie_Search_WordsTrie(t *testing.T) {
 			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(3), trie.WithMaxResults(13)},
 			expectedResults: &trie.SearchResults{
 				Results: []*trie.SearchResult{
-					{Key: strings.Split("nation", ""), EditCount: 2},
-					{Key: strings.Split("national", ""), EditCount: 0},
-					{Key: strings.Split("nationalism", ""), EditCount: 3},
-					{Key: strings.Split("nationalist", ""), EditCount: 3},
-					{Key: strings.Split("nationality", ""), EditCount: 3},
-					{Key: strings.Split("nationalize", ""), EditCount: 3},
-					{Key: strings.Split("nationally", ""), EditCount: 2},
-					{Key: strings.Split("natal", ""), EditCount: 3},
-					{Key: strings.Split("natural", ""), EditCount: 3},
-					{Key: strings.Split("nautical", ""), EditCount: 3},
-					{Key: strings.Split("notion", ""), EditCount: 3},
-					{Key: strings.Split("notional", ""), EditCount: 1},
-					{Key: strings.Split("notionally", ""), EditCount: 3},
+					{Key: strings.Split("nation", ""), EditDistance: 2},
+					{Key: strings.Split("national", ""), EditDistance: 0},
+					{Key: strings.Split("nationalism", ""), EditDistance: 3},
+					{Key: strings.Split("nationalist", ""), EditDistance: 3},
+					{Key: strings.Split("nationality", ""), EditDistance: 3},
+					{Key: strings.Split("nationalize", ""), EditDistance: 3},
+					{Key: strings.Split("nationally", ""), EditDistance: 2},
+					{Key: strings.Split("natal", ""), EditDistance: 3},
+					{Key: strings.Split("natural", ""), EditDistance: 3},
+					{Key: strings.Split("nautical", ""), EditDistance: 3},
+					{Key: strings.Split("notion", ""), EditDistance: 3},
+					{Key: strings.Split("notional", ""), EditDistance: 1},
+					{Key: strings.Split("notionally", ""), EditDistance: 3},
 				},
 			},
 		},
@@ -352,19 +352,19 @@ func TestTrie_Search_WordsTrie(t *testing.T) {
 			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(3), trie.WithMaxResults(13), trie.WithTopKLeastEdited()},
 			expectedResults: &trie.SearchResults{
 				Results: []*trie.SearchResult{
-					{Key: strings.Split("national", ""), EditCount: 0},
-					{Key: strings.Split("notional", ""), EditCount: 1},
-					{Key: strings.Split("rational", ""), EditCount: 1},
-					{Key: strings.Split("nation", ""), EditCount: 2},
-					{Key: strings.Split("nationally", ""), EditCount: 2},
-					{Key: strings.Split("atonal", ""), EditCount: 2},
-					{Key: strings.Split("factional", ""), EditCount: 2},
-					{Key: strings.Split("optional", ""), EditCount: 2},
-					{Key: strings.Split("rationale", ""), EditCount: 2},
-					{Key: strings.Split("nationalism", ""), EditCount: 3},
-					{Key: strings.Split("nationalist", ""), EditCount: 3},
-					{Key: strings.Split("nationality", ""), EditCount: 3},
-					{Key: strings.Split("nationalize", ""), EditCount: 3},
+					{Key: strings.Split("national", ""), EditDistance: 0},
+					{Key: strings.Split("notional", ""), EditDistance: 1},
+					{Key: strings.Split("rational", ""), EditDistance: 1},
+					{Key: strings.Split("nation", ""), EditDistance: 2},
+					{Key: strings.Split("nationally", ""), EditDistance: 2},
+					{Key: strings.Split("atonal", ""), EditDistance: 2},
+					{Key: strings.Split("factional", ""), EditDistance: 2},
+					{Key: strings.Split("optional", ""), EditDistance: 2},
+					{Key: strings.Split("rationale", ""), EditDistance: 2},
+					{Key: strings.Split("nationalism", ""), EditDistance: 3},
+					{Key: strings.Split("nationalist", ""), EditDistance: 3},
+					{Key: strings.Split("nationality", ""), EditDistance: 3},
+					{Key: strings.Split("nationalize", ""), EditDistance: 3},
 				},
 			},
 		},
@@ -374,8 +374,8 @@ func TestTrie_Search_WordsTrie(t *testing.T) {
 			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(3), trie.WithMaxResults(2), trie.WithTopKLeastEdited()},
 			expectedResults: &trie.SearchResults{
 				Results: []*trie.SearchResult{
-					{Key: strings.Split("national", ""), EditCount: 0},
-					{Key: strings.Split("notional", ""), EditCount: 1},
+					{Key: strings.Split("national", ""), EditDistance: 0},
+					{Key: strings.Split("notional", ""), EditDistance: 1},
 				},
 			},
 		},

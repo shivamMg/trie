@@ -38,8 +38,8 @@ type SearchResult struct {
 	Key []string
 	// Value is the value that was Put() into the Trie.
 	Value interface{}
-	// EditCount is the number of edits (insert/delete/replace) needed to convert Key into the Search()-ed key.
-	EditCount int
+	// EditDistance is the number of edits (insert/delete/replace) needed to convert Key into the Search()-ed key.
+	EditDistance int
 	// EditOps is the list of edit operations (see EditOpType) needed to convert Key into the Search()-ed key.
 	EditOps []*EditOp
 
@@ -120,11 +120,11 @@ func WithEditOps() func(*SearchOptions) {
 }
 
 // WithTopKLeastEdited can be passed to Search() alongside WithMaxEditDistance() and WithMaxResults(). When passed,
-// Search() returns maxResults number of results that have the lowest EditCounts. Results are sorted on EditCount
+// Search() returns maxResults number of results that have the lowest EditDistances. Results are sorted on EditDistance
 // (lowest to highest).
 //
-// e.g. In a Trie that stores English words searching for "wheat" might return "wheat" (EditCount=0), "cheat" (EditCount=1),
-// "beat" (EditCount=2) - in that order.
+// e.g. In a Trie that stores English words searching for "wheat" might return "wheat" (EditDistance=0), "cheat" (EditDistance=1),
+// "beat" (EditDistance=2) - in that order.
 func WithTopKLeastEdited() func(*SearchOptions) {
 	return func(so *SearchOptions) {
 		so.topKLeastEdited = true
@@ -238,11 +238,11 @@ func (t *Trie) buildWithEditDistance(stop *bool, results *SearchResults, node *N
 	*rows = append(*rows, newRow)
 
 	if newRow[columns-1] <= opts.maxEditDistance && node.isTerminal {
-		editCount := newRow[columns-1]
+		editDistance := newRow[columns-1]
 		lazyCreate := func() *SearchResult { // optimization for the case where topKLeastEdited=true and the result should not be pushed to heap
 			resultKey := make([]string, len(*keyColumn))
 			copy(resultKey, *keyColumn)
-			result := &SearchResult{Key: resultKey, Value: node.value, EditCount: editCount}
+			result := &SearchResult{Key: resultKey, Value: node.value, EditDistance: editDistance}
 			if opts.editOps {
 				result.EditOps = t.getEditOps(rows, keyColumn, key)
 			}
@@ -254,7 +254,7 @@ func (t *Trie) buildWithEditDistance(stop *bool, results *SearchResults, node *N
 				result := lazyCreate()
 				result.tiebreaker = results.tiebreakerCount
 				heap.Push(results.heap, result)
-			} else if (*results.heap)[0].EditCount > editCount {
+			} else if (*results.heap)[0].EditDistance > editDistance {
 				result := lazyCreate()
 				result.tiebreaker = results.tiebreakerCount
 				heap.Pop(results.heap)

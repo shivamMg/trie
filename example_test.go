@@ -59,7 +59,7 @@ func Example() {
 	results = tri.Search(key, trie.WithMaxEditDistance(2), // An edit can be insert, delete, replace
 		trie.WithEditOps())
 	for _, res := range results.Results {
-		fmt.Println(res.Key, res.EditCount) // EditCount is number of edits needed to convert to [the tree]
+		fmt.Println(res.Key, res.EditDistance) // EditDistance is number of edits needed to convert to [the tree]
 	}
 	// Output (results not more than 2 edits away from [the tree]):
 	// [the] 1
@@ -78,7 +78,7 @@ func Example() {
 
 	results = tri.Search(key, trie.WithMaxEditDistance(2), trie.WithTopKLeastEdited(), trie.WithMaxResults(2))
 	for _, res := range results.Results {
-		fmt.Println(res.Key, res.Value, res.EditCount)
+		fmt.Println(res.Key, res.Value, res.EditDistance)
 	}
 	// Output (top 2 least edited results):
 	// [the] 1 1

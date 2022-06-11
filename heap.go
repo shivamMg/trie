@@ -7,10 +7,10 @@ func (s searchResultMaxHeap) Len() int {
 }
 
 func (s searchResultMaxHeap) Less(i, j int) bool {
-	if s[i].EditCount == s[j].EditCount {
+	if s[i].EditDistance == s[j].EditDistance {
 		return s[i].tiebreaker > s[j].tiebreaker
 	}
-	return s[i].EditCount > s[j].EditCount
+	return s[i].EditDistance > s[j].EditDistance
 }
 
 func (s searchResultMaxHeap) Swap(i, j int) {
