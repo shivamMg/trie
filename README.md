@@ -4,13 +4,14 @@ An implementation of the [Trie](https://en.wikipedia.org/wiki/Trie) data structu
 
 ### Demo
 
-Auto-completion demo can be tried at [shivamMg.github.io](https://shivammg.github.io/trie/).
+Auto-completion demo can be tried at [shivamMg.github.io/trie](https://shivammg.github.io/trie/).
 
 ### Features
 
-- `[]string` keys, instead of `string` - e.g. [the quick brown fox] can be a key where each word is a node in the Trie
-- Support for basic operations: Put key, Delete key, and Prefix search (e.g. searching for _nation_ will return _nation_, _national_, _nationalism_)
-- Support for Edit distance search (aka Levenshtein distance) - e.g. searching for _wheat_ will return similar looking words like _wheat_, _cheat_, _heat_, _what_
+- Keys are `[]string` instead of `string`, thereby supporting more use cases - e.g. []string{the quick brown fox} can be a key where each word will be a node in the Trie
+- Support for Put key and Delete key
+- Support for Prefix search - e.g. searching for _nation_ will return _nation_, _national_, _nationalism_, _nationalist_, etc.
+- Support for Edit distance search (aka Levenshtein distance) - e.g. searching for _wheat_ will return similar looking words like _wheat_, _cheat_, _heat_, _what_, etc.
 - Order of search results is deterministic. It follows insertion (Put()) order.
 
 ### Examples

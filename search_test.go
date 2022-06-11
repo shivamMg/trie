@@ -71,6 +71,34 @@ func TestTrie_Search(t *testing.T) {
 			expectedResults: &trie.SearchResults{},
 		},
 		{
+			name:     "prefix-empty",
+			inputKey: []string{},
+			expectedResults: &trie.SearchResults{
+				Results: []*trie.SearchResult{
+					{Key: []string{"the"}, Value: 1},
+					{Key: []string{"the", "quick", "brown", "fox"}, Value: 2},
+					{Key: []string{"the", "quick", "swimmer"}, Value: 3},
+					{Key: []string{"the", "green", "tree"}, Value: 4},
+					{Key: []string{"an", "apple", "tree"}, Value: 5},
+					{Key: []string{"an", "umbrella"}, Value: 6},
+				},
+			},
+		},
+		{
+			name:     "prefix-nil",
+			inputKey: nil,
+			expectedResults: &trie.SearchResults{
+				Results: []*trie.SearchResult{
+					{Key: []string{"the"}, Value: 1},
+					{Key: []string{"the", "quick", "brown", "fox"}, Value: 2},
+					{Key: []string{"the", "quick", "swimmer"}, Value: 3},
+					{Key: []string{"the", "green", "tree"}, Value: 4},
+					{Key: []string{"an", "apple", "tree"}, Value: 5},
+					{Key: []string{"an", "umbrella"}, Value: 6},
+				},
+			},
+		},
+		{
 			name:         "prefix-one-word-with-exact-key",
 			inputKey:     []string{"the"},
 			inputOptions: []func(*trie.SearchOptions){trie.WithExactKey()},
@@ -229,9 +257,20 @@ func TestTrie_Search(t *testing.T) {
 			},
 		},
 		{
-			name:         "edit-distance-no-key",
+			name:         "edit-distance-empty",
 			inputKey:     []string{},
-			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(2), trie.WithTopKLeastEdited(), trie.WithMaxResults(2)},
+			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(2), trie.WithTopKLeastEdited(), trie.WithMaxResults(5)},
+			expectedResults: &trie.SearchResults{
+				Results: []*trie.SearchResult{
+					{Key: []string{"the"}, Value: 1, EditCount: 1},
+					{Key: []string{"an", "umbrella"}, Value: 6, EditCount: 2},
+				},
+			},
+		},
+		{
+			name:         "edit-distance-nil",
+			inputKey:     nil,
+			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(2), trie.WithTopKLeastEdited(), trie.WithMaxResults(5)},
 			expectedResults: &trie.SearchResults{
 				Results: []*trie.SearchResult{
 					{Key: []string{"the"}, Value: 1, EditCount: 1},
@@ -259,7 +298,7 @@ func TestTrie_Search_WordsTrie(t *testing.T) {
 		expectedResults *trie.SearchResults
 	}{
 		{
-			name:     "aband",
+			name:     "prefix",
 			inputKey: strings.Split("aband", ""),
 			expectedResults: &trie.SearchResults{
 				Results: []*trie.SearchResult{
@@ -267,6 +306,76 @@ func TestTrie_Search_WordsTrie(t *testing.T) {
 					{Key: strings.Split("abandoned", "")},
 					{Key: strings.Split("abandoning", "")},
 					{Key: strings.Split("abandonment", "")},
+				},
+			},
+		},
+		{
+			name:         "edit-distance",
+			inputKey:     strings.Split("wheat", ""),
+			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(1)},
+			expectedResults: &trie.SearchResults{
+				Results: []*trie.SearchResult{
+					{Key: strings.Split("wheat", ""), EditCount: 0},
+					{Key: strings.Split("wheal", ""), EditCount: 1},
+					{Key: strings.Split("whet", ""), EditCount: 1},
+					{Key: strings.Split("what", ""), EditCount: 1},
+					{Key: strings.Split("cheat", ""), EditCount: 1},
+					{Key: strings.Split("heat", ""), EditCount: 1},
+				},
+			},
+		},
+		{
+			name:         "edit-distance-with-max-results",
+			inputKey:     strings.Split("national", ""),
+			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(3), trie.WithMaxResults(13)},
+			expectedResults: &trie.SearchResults{
+				Results: []*trie.SearchResult{
+					{Key: strings.Split("nation", ""), EditCount: 2},
+					{Key: strings.Split("national", ""), EditCount: 0},
+					{Key: strings.Split("nationalism", ""), EditCount: 3},
+					{Key: strings.Split("nationalist", ""), EditCount: 3},
+					{Key: strings.Split("nationality", ""), EditCount: 3},
+					{Key: strings.Split("nationalize", ""), EditCount: 3},
+					{Key: strings.Split("nationally", ""), EditCount: 2},
+					{Key: strings.Split("natal", ""), EditCount: 3},
+					{Key: strings.Split("natural", ""), EditCount: 3},
+					{Key: strings.Split("nautical", ""), EditCount: 3},
+					{Key: strings.Split("notion", ""), EditCount: 3},
+					{Key: strings.Split("notional", ""), EditCount: 1},
+					{Key: strings.Split("notionally", ""), EditCount: 3},
+				},
+			},
+		},
+		{
+			name:         "edit-distance-with-topk",
+			inputKey:     strings.Split("national", ""),
+			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(3), trie.WithMaxResults(13), trie.WithTopKLeastEdited()},
+			expectedResults: &trie.SearchResults{
+				Results: []*trie.SearchResult{
+					{Key: strings.Split("national", ""), EditCount: 0},
+					{Key: strings.Split("notional", ""), EditCount: 1},
+					{Key: strings.Split("rational", ""), EditCount: 1},
+					{Key: strings.Split("nation", ""), EditCount: 2},
+					{Key: strings.Split("nationally", ""), EditCount: 2},
+					{Key: strings.Split("atonal", ""), EditCount: 2},
+					{Key: strings.Split("factional", ""), EditCount: 2},
+					{Key: strings.Split("optional", ""), EditCount: 2},
+					{Key: strings.Split("rationale", ""), EditCount: 2},
+					{Key: strings.Split("nationalism", ""), EditCount: 3},
+					{Key: strings.Split("nationalist", ""), EditCount: 3},
+					{Key: strings.Split("nationality", ""), EditCount: 3},
+					{Key: strings.Split("nationalize", ""), EditCount: 3},
+				},
+			},
+		},
+		{
+			name:         "edit-distance-with-topk-stop-after-prioritized",
+			inputKey:     strings.Split("national", ""),
+			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(3), trie.WithMaxResults(2), trie.WithTopKLeastEdited()},
+			expectedResults: &trie.SearchResults{
+				Results: []*trie.SearchResult{
+					{Key: strings.Split("national", ""), EditCount: 0},
+					{Key: strings.Split("notional", ""), EditCount: 1},
 				},
 			},
 		},
@@ -347,31 +456,31 @@ func BenchmarkTrie_Search_WordsTrie(b *testing.B) {
 	}{
 		{
 			name:     "prefix",
-			inputKey: []string{"a", "b"},
+			inputKey: strings.Split("ab", ""),
 		},
 		{
 			name:         "prefix-with-max-results",
-			inputKey:     []string{"a", "b"},
+			inputKey:     strings.Split("ab", ""),
 			inputOptions: []func(*trie.SearchOptions){trie.WithMaxResults(20)},
 		},
 		{
 			name:         "edit-distance",
-			inputKey:     []string{"s", "o", "m", "e", "d", "a", "y"},
+			inputKey:     strings.Split("someday", ""),
 			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(5)},
 		},
 		{
 			name:         "edit-distance-with-edit-ops",
-			inputKey:     []string{"s", "o", "m", "e", "d", "a", "y"},
+			inputKey:     strings.Split("someday", ""),
 			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(5), trie.WithEditOps()},
 		},
 		{
 			name:         "edit-distance-with-edit-ops-with-max-results",
-			inputKey:     []string{"s", "o", "m", "e", "d", "a", "y"},
+			inputKey:     strings.Split("someday", ""),
 			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(5), trie.WithEditOps(), trie.WithMaxResults(20)},
 		},
 		{
 			name:     "edit-distance-with-edit-ops-with-max-results-with-top-k",
-			inputKey: []string{"s", "o", "m", "e", "d", "a", "y"},
+			inputKey: strings.Split("someday", ""),
 			inputOptions: []func(*trie.SearchOptions){trie.WithMaxEditDistance(5), trie.WithEditOps(), trie.WithMaxResults(20),
 				trie.WithTopKLeastEdited()},
 		},
@@ -380,7 +489,7 @@ func BenchmarkTrie_Search_WordsTrie(b *testing.B) {
 	for _, bm := range benchmarks {
 		b.Run(bm.name, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				results = tri.Search([]string{"a", "b"}, bm.inputOptions...)
+				results = tri.Search(bm.inputKey, bm.inputOptions...)
 			}
 			benchmarkResults = results
 		})

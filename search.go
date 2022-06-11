@@ -135,12 +135,24 @@ func (t *Trie) searchWithEditDistance(key []string, opts *SearchOptions) *Search
 	}
 
 	keyColumn := make([]string, 1, m)
+	stop := false
+	// prioritize Node that has the same keyPart as key. this results in better results
+	// e.g. if key=national, build with Node(keyPart=n) first so that keys like notional, nation, nationally, etc. are prioritized
+	// same logic is used inside the recursive buildWithEditDistance() method
+	var prioritizedNode *Node
+	if len(key) > 0 {
+		if prioritizedNode = t.root.children[key[0]]; prioritizedNode != nil {
+			keyColumn[0] = prioritizedNode.keyPart
+			t.buildWithEditDistance(&stop, results, prioritizedNode, &keyColumn, &rows, key, opts)
+		}
+	}
 	for dllNode := t.root.childrenDLL.head; dllNode != nil; dllNode = dllNode.next {
 		node := dllNode.trieNode
-		keyColumn[0] = node.keyPart
-		if t.buildWithEditDistance(results, node, &keyColumn, &rows, key, opts) {
-			break
+		if node == prioritizedNode {
+			continue
 		}
+		keyColumn[0] = node.keyPart
+		t.buildWithEditDistance(&stop, results, node, &keyColumn, &rows, key, opts)
 	}
 	if opts.topKLeastEdited {
 		n := results.heap.Len()
@@ -157,7 +169,10 @@ func (t *Trie) searchWithEditDistance(key []string, opts *SearchOptions) *Search
 	return results
 }
 
-func (t *Trie) buildWithEditDistance(results *SearchResults, node *Node, keyColumn *[]string, rows *[][]int, key []string, opts *SearchOptions) (stop bool) {
+func (t *Trie) buildWithEditDistance(stop *bool, results *SearchResults, node *Node, keyColumn *[]string, rows *[][]int, key []string, opts *SearchOptions) {
+	if *stop {
+		return
+	}
 	prevRow := (*rows)[len(*rows)-1]
 	columns := len(key) + 1
 	newRow := make([]int, columns)
@@ -177,7 +192,7 @@ func (t *Trie) buildWithEditDistance(results *SearchResults, node *Node, keyColu
 
 	if newRow[columns-1] <= opts.maxEditDistance && node.isTerminal {
 		editCount := newRow[columns-1]
-		lazyCreate := func() *SearchResult { // optimization for: case when topKLeastEdited=true and result is not pushed to heap
+		lazyCreate := func() *SearchResult { // optimization for the case where topKLeastEdited=true and the result should not be pushed to heap
 			resultKey := make([]string, len(*keyColumn))
 			copy(resultKey, *keyColumn)
 			result := &SearchResult{Key: resultKey, Value: node.value, EditCount: editCount}
@@ -202,25 +217,34 @@ func (t *Trie) buildWithEditDistance(results *SearchResults, node *Node, keyColu
 			result := lazyCreate()
 			results.Results = append(results.Results, result)
 			if opts.maxResults && len(results.Results) == opts.maxResultsCount {
-				return true
+				*stop = true
+				return
 			}
 		}
 	}
 
 	if min(newRow...) <= opts.maxEditDistance {
+		var prioritizedNode *Node
+		m := len(*keyColumn)
+		if m < len(key) {
+			if prioritizedNode = node.children[key[m]]; prioritizedNode != nil {
+				*keyColumn = append(*keyColumn, prioritizedNode.keyPart)
+				t.buildWithEditDistance(stop, results, prioritizedNode, keyColumn, rows, key, opts)
+				*keyColumn = (*keyColumn)[:len(*keyColumn)-1]
+			}
+		}
 		for dllNode := node.childrenDLL.head; dllNode != nil; dllNode = dllNode.next {
 			child := dllNode.trieNode
-			*keyColumn = append(*keyColumn, child.keyPart)
-			stop := t.buildWithEditDistance(results, child, keyColumn, rows, key, opts)
-			*keyColumn = (*keyColumn)[:len(*keyColumn)-1]
-			if stop {
-				return true
+			if child == prioritizedNode {
+				continue
 			}
+			*keyColumn = append(*keyColumn, child.keyPart)
+			t.buildWithEditDistance(stop, results, child, keyColumn, rows, key, opts)
+			*keyColumn = (*keyColumn)[:len(*keyColumn)-1]
 		}
 	}
 
 	*rows = (*rows)[:len(*rows)-1]
-	return false
 }
 
 func (t *Trie) getEditOps(rows *[][]int, keyColumn *[]string, key []string) []*EditOp {
