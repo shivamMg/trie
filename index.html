@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
   <head>
     <title>trie auto-completion demo</title>
@@ -56,13 +57,13 @@
         <div>
           <p>
             This is a WebAssembly demo for auto-completion using the <a href="https://github.com/shivamMg/trie" target="_blank">trie Go library</a>.
-            The WASM module contains a Trie populated with English dictionary words.
+            The WASM module contains a Trie populated with English dictionary words. Searching a word retrieves max 10 results.
           </p>
           <p>
             The default search is Prefix search i.e. results will have the same prefix.
           </p>
           <p>
-            If "Edit distance search" is enabled, then the returned results will be at most 3
+            If "Edit distance search" is enabled, then results will be at most 3
             <a href="https://en.wikipedia.org/wiki/Edit_distance" target="_blank">edit distance</a> away and in least-edited-first order.
           </p>
         </div>
