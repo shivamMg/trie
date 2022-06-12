@@ -4,7 +4,7 @@ An implementation of the [Trie](https://en.wikipedia.org/wiki/Trie) data structu
 
 ### Demo
 
-Auto-completion demo can be tried at [shivamMg.github.io/trie](https://shivammg.github.io/trie/).
+A WebAssembly demo can be tried at [shivamMg.github.io/trie](https://shivammg.github.io/trie/).
 
 ### Features
 
@@ -12,7 +12,7 @@ Auto-completion demo can be tried at [shivamMg.github.io/trie](https://shivammg.
 - Support for Put key and Delete key
 - Support for Prefix search - e.g. searching for _nation_ might return _nation_, _national_, _nationalism_, _nationalist_, etc.
 - Support for Edit distance search (aka Levenshtein distance) - e.g. searching for _wheat_ might return similar looking words like _wheat_, _cheat_, _heat_, _what_, etc.
-- Order of search results is deterministic. It follows insertion (Put()) order.
+- Order of search results is deterministic. It follows insertion order.
 
 ### Examples
 
