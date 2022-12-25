@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	_ "embed"
 	"fmt"
 	"io"
 	"strings"
@@ -11,6 +12,9 @@ import (
 
 	"github.com/shivamMg/trie"
 )
+
+//go:embed words.txt
+var data []byte
 
 var (
 	mu  sync.Mutex
@@ -27,7 +31,6 @@ func initTrie() {
 	mu.Lock()
 	defer mu.Unlock()
 	tri = trie.New()
-	data := MustAsset("words.txt")
 	r := bufio.NewReader(bytes.NewReader(data))
 	for {
 		word, err := r.ReadString('\n')
