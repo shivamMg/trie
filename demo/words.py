@@ -4,7 +4,7 @@ import string
 
 
 WORDS_FILE = '/usr/share/dict/american-english'  # https://en.wikipedia.org/wiki/Words_(Unix)
-TARGET_FILE = 'words.txt'
+TARGET_FILE = 'wasm/words.txt'
 
 
 if __name__ == '__main__':

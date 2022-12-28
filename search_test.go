@@ -500,7 +500,7 @@ func getWordsTrie() *trie.Trie {
 	if wordsTrie != nil {
 		return wordsTrie
 	}
-	f, err := os.Open("./demo/words.txt")
+	f, err := os.Open("./demo/wasm/words.txt")
 	if err != nil {
 		panic(err)
 	}
