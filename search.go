@@ -353,6 +353,46 @@ func (t *Trie) search(prefixKey []string, opts *SearchOptions) *SearchResults {
 	return results
 }
 
+// SelectOnValue: find item based on value.
+// apply eval func to each Value of the tree
+// build a result with key, value for each itme eval == true
+func (t *Trie) SelectOnValue(eval func(interface{}) bool) *SearchResults {
+	results := &SearchResults{}
+	node := t.root
+	t.selectOnValue(results, node, []string{}, eval)
+	return results
+}
+
+// selectOnValue: recursively apply eval an item tree
+func (t *Trie) selectOnValue(results *SearchResults, node *Node, prefixKey []string, eval func(interface{}) bool) *SearchResults {
+
+	for key, child := range node.children {
+		pfx := append(prefixKey, key)
+		if child.isTerminal {
+			if eval(child.value) {
+				t.scanBuild(results, child, &pfx)
+			}
+			t.selectOnValue(results, child, pfx, eval)
+
+		} else {
+			t.selectOnValue(results, child, pfx, eval)
+		}
+	}
+	return results
+}
+
+// scanBuild: build a result off scanned items
+func (t *Trie) scanBuild(results *SearchResults, node *Node, prefixKey *[]string) (stop bool) {
+	if node.isTerminal {
+		key := make([]string, len(*prefixKey))
+		copy(key, *prefixKey)
+		result := &SearchResult{Key: key, Value: node.value}
+		results.Results = append(results.Results, result)
+	}
+
+	return false
+}
+
 func (t *Trie) build(results *SearchResults, node *Node, prefixKey *[]string, opts *SearchOptions) (stop bool) {
 	if node.isTerminal {
 		key := make([]string, len(*prefixKey))

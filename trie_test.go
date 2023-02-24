@@ -8,6 +8,59 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestTrie_Scan(t *testing.T) {
+	tri := trie.New()
+	tri.Put([]string{"d", "a", "l", "i"}, 2)
+	tri.Put([]string{"d", "a", "l", "i", "b"}, 1)
+	tri.Put([]string{"d", "a", "l", "i", "b", "e"}, 2)
+	tri.Put([]string{"d", "a", "l", "i", "b", "e", "r", "t"}, 1)
+
+	rs := tri.SelectOnValue(func(val interface{}) bool {
+		what := val.(int)
+		if what == 2 {
+			return true
+		}
+		return false
+	})
+
+	for _, res := range rs.Results {
+		assert.True(t, res.Value == 2)
+	}
+	assert.True(t, len(rs.Results) == 2)
+
+}
+
+func TestTrie_ScanComplex(t *testing.T) {
+	tri := trie.New()
+	tri.Put([]string{"d", "a", "l", "i"}, []int{0, 1, 2, 4, 5})
+	tri.Put([]string{"d", "a", "l", "i", "b"}, []int{1, 2, 4, 5})
+	tri.Put([]string{"d", "a", "l", "i", "b", "e"}, []int{0, 1, 2, 4, 5})
+	tri.Put([]string{"d", "a", "l", "i", "b", "e", "r", "t"}, []int{1, 2, 4, 5})
+
+	rs := tri.SelectOnValue(func(val interface{}) bool {
+		what := val.([]int)
+		for _, i := range what {
+			if i == 0 {
+				return true
+			}
+		}
+		return false
+	})
+
+	for _, res := range rs.Results {
+		what := res.Value.([]int)
+		ok := false
+		for _, i := range what {
+			if i == 0 {
+				ok = true
+			}
+		}
+		assert.True(t, ok)
+	}
+	assert.True(t, len(rs.Results) == 2)
+
+}
+
 func TestTrie_Put(t *testing.T) {
 	tri := trie.New()
 	existed := tri.Put([]string{"an", "umbrella"}, 2)
