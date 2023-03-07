@@ -353,29 +353,50 @@ func (t *Trie) search(prefixKey []string, opts *SearchOptions) *SearchResults {
 	return results
 }
 
-// SelectOnValue: find item based on value.
+type WalkFunc func(interface{}) bool
+
+// Walk: find item based on value.
 // apply eval func to each Value of the tree
 // build a result with key, value for each itme eval == true
-func (t *Trie) SelectOnValue(eval func(interface{}) bool) *SearchResults {
+func (t *Trie) Walk(walker WalkFunc) *SearchResults {
 	results := &SearchResults{}
 	node := t.root
-	t.selectOnValue(results, node, []string{}, eval)
+	t.walk(results, node, []string{}, walker)
 	return results
 }
 
-// selectOnValue: recursively apply eval an item tree
-func (t *Trie) selectOnValue(results *SearchResults, node *Node, prefixKey []string, eval func(interface{}) bool) *SearchResults {
+// walk: recursively apply eval an item tree
+func (t *Trie) walk(results *SearchResults, node *Node, prefixKey []string, walker WalkFunc) *SearchResults {
+
+	for dllNode := node.childrenDLL.head; dllNode != nil; dllNode = dllNode.next {
+		node := dllNode.trieNode
+		key := node.keyPart
+		pfx := append(prefixKey, key)
+		if node.isTerminal {
+			if walker(node.value) {
+				t.scanBuild(results, node, &pfx)
+			}
+			t.walk(results, node, pfx, walker)
+
+		} else {
+			t.walk(results, node, pfx, walker)
+		}
+	}
+	return results
+}
+
+func (t *Trie) olddwalk(results *SearchResults, node *Node, prefixKey []string, walker WalkFunc) *SearchResults {
 
 	for key, child := range node.children {
 		pfx := append(prefixKey, key)
 		if child.isTerminal {
-			if eval(child.value) {
+			if walker(child.value) {
 				t.scanBuild(results, child, &pfx)
 			}
-			t.selectOnValue(results, child, pfx, eval)
+			t.walk(results, child, pfx, walker)
 
 		} else {
-			t.selectOnValue(results, child, pfx, eval)
+			t.walk(results, child, pfx, walker)
 		}
 	}
 	return results

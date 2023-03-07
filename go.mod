@@ -1,4 +1,4 @@
-module github.com/tophe/trie
+module github.com/shivamMg/trie
 
 go 1.18
 

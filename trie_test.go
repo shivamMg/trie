@@ -15,7 +15,7 @@ func TestTrie_Scan(t *testing.T) {
 	tri.Put([]string{"d", "a", "l", "i", "b", "e"}, 2)
 	tri.Put([]string{"d", "a", "l", "i", "b", "e", "r", "t"}, 1)
 
-	rs := tri.SelectOnValue(func(val interface{}) bool {
+	rs := tri.Walk(func(val interface{}) bool {
 		what := val.(int)
 		if what == 2 {
 			return true
@@ -37,7 +37,7 @@ func TestTrie_ScanComplex(t *testing.T) {
 	tri.Put([]string{"d", "a", "l", "i", "b", "e"}, []int{0, 1, 2, 4, 5})
 	tri.Put([]string{"d", "a", "l", "i", "b", "e", "r", "t"}, []int{1, 2, 4, 5})
 
-	rs := tri.SelectOnValue(func(val interface{}) bool {
+	rs := tri.Walk(func(val interface{}) bool {
 		what := val.([]int)
 		for _, i := range what {
 			if i == 0 {
