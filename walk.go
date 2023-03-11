@@ -2,6 +2,8 @@ package trie
 
 type WalkFunc func(key []string, node *Node) error
 
+// Walk traverses the Trie and calls walker function. If walker function returns an error, Walk early-returns with that error.
+// Traversal follows insertion order.
 func (t *Trie) Walk(key []string, walker WalkFunc) error {
 	node := t.root
 	for _, keyPart := range key {

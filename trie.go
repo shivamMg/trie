@@ -47,7 +47,7 @@ func (n *Node) Value() interface{} {
 	return n.value
 }
 
-// SetValue sets the value stored for the key ending at this Node. If Node is not a terminal, value is not set.
+// SetValue sets the value for the key ending at this Node. If Node is not a terminal, value is not set.
 func (n *Node) SetValue(value interface{}) {
 	if n.isTerminal {
 		n.value = value
@@ -108,7 +108,7 @@ func (t *Trie) Root() *Node {
 	return t.root
 }
 
-// Put upserts value the given key in the Trie. It returns a boolean depending on
+// Put upserts value for the given key in the Trie. It returns a boolean depending on
 // whether the key already existed or not.
 func (t *Trie) Put(key []string, value interface{}) (existed bool) {
 	node := t.root
