@@ -47,6 +47,13 @@ func (n *Node) Value() interface{} {
 	return n.value
 }
 
+// SetValue sets the value stored for the key ending at this Node. If Node is not a terminal, value is not set.
+func (n *Node) SetValue(value interface{}) {
+	if n.isTerminal {
+		n.value = value
+	}
+}
+
 // ChildNodes returns the child-nodes of this Node.
 func (n *Node) ChildNodes() []*Node {
 	return n.childNodes()
