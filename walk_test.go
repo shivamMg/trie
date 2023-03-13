@@ -31,11 +31,14 @@ func TestTrie_WalkErr(t *testing.T) {
 }
 
 func TestTrie_Walk(t *testing.T) {
+
+	// walk can be used to search based on content
 	tri := trie.New()
 	tri.Put([]string{"d", "a", "l", "i"}, []int{0, 1, 2, 4, 5})
 	tri.Put([]string{"d", "a", "l", "i", "b"}, []int{1, 2, 4, 5})
 	tri.Put([]string{"d", "a", "l", "i", "b", "e"}, []int{1, 0, 2, 4, 5, 0})
 	tri.Put([]string{"d", "a", "l", "i", "b", "e", "r", "t"}, []int{1, 2, 4, 5})
+
 	type KVPair struct {
 		key   []string
 		value []int
@@ -72,4 +75,37 @@ func TestTrie_Walk(t *testing.T) {
 	err = tri.Walk([]string{"a", "b", "c"}, walker)
 	assert.NoError(t, err)
 	assert.Nil(t, selected)
+
+	// walk can be used tu update Node.Value
+	tri = trie.New()
+	tri.Put([]string{"d", "a", "l", "i"}, []int{0, 1, 2, 4, 5})
+	tri.Put([]string{"d", "a", "l", "i", "b"}, []int{1, 2, 4, 5})
+	tri.Put([]string{"d", "a", "l", "i", "b", "e"}, []int{1, 0, 2, 4, 5, 0})
+
+	walker = func(key []string, node *trie.Node) error {
+		what := node.Value().([]int)
+		newValue := []int{}
+		for _, i := range what {
+			if i == 2 {
+				i++
+			}
+			newValue = append(newValue, i)
+		}
+		node.SetValue(newValue)
+		return nil
+	}
+
+	err = tri.Walk(nil, walker)
+	assert.NoError(t, err)
+
+	all := tri.Search([]string{"d"})
+	for _, result := range all.Results {
+
+		what := result.Value.([]int)
+		for _, i := range what {
+			assert.NotEqual(t, i, 2, "Value should not have any 2")
+
+		}
+	}
+
 }

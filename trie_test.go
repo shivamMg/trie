@@ -15,11 +15,11 @@ func TestNode_SetValue(t *testing.T) {
 
 	node := tri.Root()
 	node.SetValue(10)
-	assert.Equal(t, nil, node.Value())
+	assert.Equal(t, nil, node.Value(), "Non Terminal cannot be Set")
 
 	node = tri.Root().ChildNodes()[0]
 	node.SetValue(10)
-	assert.Equal(t, nil, node.Value())
+	assert.Equal(t, nil, node.Value(), "Non Terminal cannot be Set")
 
 	node = tri.Root().ChildNodes()[0].ChildNodes()[0]
 	node.SetValue(10)
