@@ -515,6 +515,7 @@ func getWordsTrie() *trie.Trie {
 			panic(err)
 		}
 		word = strings.TrimRight(word, "\n")
+		word = strings.TrimRight(word, "\r") // windows
 		key := strings.Split(word, "")
 		tri.Put(key, nil)
 	}

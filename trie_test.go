@@ -8,6 +8,24 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestNode_SetValue(t *testing.T) {
+	tri := trie.New()
+	tri.Put([]string{"a", "b"}, 1)
+	tri.Put([]string{"a", "b", "c"}, 2)
+
+	node := tri.Root()
+	node.SetValue(10)
+	assert.Equal(t, nil, node.Value())
+
+	node = tri.Root().ChildNodes()[0]
+	node.SetValue(10)
+	assert.Equal(t, nil, node.Value())
+
+	node = tri.Root().ChildNodes()[0].ChildNodes()[0]
+	node.SetValue(10)
+	assert.Equal(t, 10, node.Value())
+}
+
 func TestTrie_Put(t *testing.T) {
 	tri := trie.New()
 	existed := tri.Put([]string{"an", "umbrella"}, 2)
